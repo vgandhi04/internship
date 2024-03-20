@@ -6,7 +6,7 @@
 
 ```bash
 # Create and switch to the dev branch
-git checkout -b dev
+git checkout -b <new_branch_name>
 ```
 
 ## 2. Work on the Dev Branch
@@ -16,12 +16,17 @@ Make your changes in this branch.
 ### 2.1 if already in dev branch
 ```bash
 # Switch to the dev branch
-git checkout dev
+git checkout <new_branch_name>
 
 # Fetch the latest changes from the remote dev branch and merge them into your local dev branch
-git pull origin dev
+git pull origin <new_branch_name>
 ```
 ## 3. Commit Your Changes
+
+```bash
+# chec the status before commit or add
+git status
+```
 
 ```bash
 # Stage changes
