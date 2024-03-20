@@ -1,0 +1,321 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters": {
+    "env": {
+      "Type": "String"
+    },
+    "VpcCidrBlock": {
+      "Type": "String",
+      "Default": "10.0.0.0/16",
+      "Description": "CIDR block for the VPC"
+    },
+    "PublicSubnetCidrBlock": {
+      "Type": "String",
+      "Default": "10.0.8.0/24",
+      "Description": "CIDR block for the public subnet"
+    },
+    "PrivateSubnetCidrBlock": {
+      "Type": "String",
+      "Default": "10.0.9.0/24",
+      "Description": "CIDR block for the private subnet"
+    }
+  },
+  "Resources": {
+    "RedisVPCV1": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": {
+          "Ref": "VpcCidrBlock"
+        },
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "MyVPCV1"
+          }
+        ]
+      }
+    },
+    "PublicSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "RedisVPCV1"
+        },
+        "CidrBlock": {
+          "Ref": "PublicSubnetCidrBlock"
+        },
+        "AvailabilityZone": "ap-south-1a",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "PublicSubnet"
+          }
+        ]
+      }
+    },
+    "PrivateSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "RedisVPCV1"
+        },
+        "CidrBlock": {
+          "Ref": "PrivateSubnetCidrBlock"
+        },
+        "AvailabilityZone": "ap-south-1a",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "PrivateSubnet"
+          }
+        ]
+      }
+    },
+    "InternetGateway": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "InternetGatewayVPC"
+          }
+        ]
+      }
+    },
+    "AttachGateway": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "RedisVPCV1"
+        },
+        "InternetGatewayId": {
+          "Ref": "InternetGateway"
+        }
+      }
+    },
+    "PublicRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "RedisVPCV1"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "PublicRouteTable"
+          }
+        ]
+      }
+    },
+    "PrivateRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "RedisVPCV1"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "PrivateRouteTable"
+          }
+        ]
+      }
+    },
+    "PublicRoute": {
+      "Type": "AWS::EC2::Route",
+      "DependsOn": "AttachGateway",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PublicRouteTable"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "InternetGateway"
+        }
+      }
+    },
+    "PublicSubnetAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PublicRouteTable"
+        },
+        "SubnetId": {
+          "Ref": "PublicSubnet"
+        }
+      }
+    },
+    "PrivateSubnetAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PrivateRouteTable"
+        },
+        "SubnetId": {
+          "Ref": "PrivateSubnet"
+        }
+      }
+    },
+    "ElastiCacheSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "ElastiCache Security Group",
+        "VpcId": {
+          "Ref": "RedisVPCV1"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "privateElastiCacheSecurityGroupc"
+          }
+        ],
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 22,
+            "ToPort": 22,
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 8000,
+            "ToPort": 8000,
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 6379,
+            "ToPort": 6379,
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "RedisCluster": {
+      "Type": "AWS::ElastiCache::CacheCluster",
+      "Properties": {
+        "CacheNodeType": "cache.t2.micro",
+        "Engine": "redis",
+        "NumCacheNodes": 1,
+        "VpcSecurityGroupIds": [
+          {
+            "Fn::GetAtt": ["ElastiCacheSecurityGroup", "GroupId"]
+          }
+        ],
+        "CacheSubnetGroupName": {
+          "Ref": "PrivateSubnetCacheGroup"
+        },
+        "PreferredAvailabilityZone": "ap-south-1a",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "ElasticRedisClusterT2Micro"
+          }
+        ]
+      }
+    },
+    "PrivateSubnetCacheGroup": {
+      "Type": "AWS::ElastiCache::SubnetGroup",
+      "Properties": {
+        "Description": "Subnet group for ElastiCache in private subnet",
+        "SubnetIds": [
+          {
+            "Ref": "PrivateSubnet"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "ElasticPrivateSubnetCacheGroup"
+          }
+        ]
+      }
+    },
+    "NATGateway": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": ["NATGatewayEIP", "AllocationId"]
+        },
+        "SubnetId": {
+          "Ref": "PublicSubnet"
+        },
+        "Tags": [
+          {
+            "Key": "stack",
+            "Value": "NatGatewayVPC"
+          }
+        ]
+      }
+    },
+    "NATGatewayEIP": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "NATGatewayEIP"
+          }
+        ]
+      }
+    },
+    "RouteNATGateway": {
+      "DependsOn": ["NATGateway"],
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": { "Ref": "PrivateRouteTable" },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": { "Ref": "NATGateway" }
+      }
+    }
+  },
+  "Outputs": {
+    "stacName": {
+      "Value": {
+        "Ref": "RedisVPCV1"
+      },
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}" } }
+    },
+    "VPCID": {
+      "Value": {
+        "Ref": "RedisVPCV1"
+      },
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}-VPCID" } }
+    },
+    "PrivateSubnetID": {
+      "Value": {
+        "Ref": "PrivateSubnet"
+      },
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}-PrivateSubnetID" } }
+    },
+    "Ec2SecurityGroupID": {
+      "Value": {
+        "Ref": "ElastiCacheSecurityGroup"
+      },
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}-Ec2SecurityGroupID" } }
+    },
+    "RedisEndpoint": {
+      "Value": {
+        "Fn::GetAtt": ["RedisCluster", "RedisEndpoint.Address"]
+      },
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}-RedisEndpoint" } }
+    },
+    "NATGatewayEIP": {
+      "Value": {
+        "Ref": "NATGatewayEIP"
+      },
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}-NATGatewayEIP" } }
+    }
+  },
+  "Description": "{\"createdOn\":\"Windows\",\"createdBy\":\"Amplify\",\"createdWith\":\"12.10.1\",\"stackType\":\"custom-customCloudformation\",\"metadata\":{}}"
+}

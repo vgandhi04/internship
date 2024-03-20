@@ -1,0 +1,103 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters": {
+    "VpcCidrBlock": {
+      "Type": "String",
+      "Default": "10.0.0.0/16",
+      "Description": "CIDR block for the VPC"
+    },
+    "PublicSubnetCidrBlock": {
+      "Type": "String",
+      "Default": "10.0.1.0/24",
+      "Description": "CIDR block for the public subnet"
+    },
+    "PrivateSubnetCidrBlock": {
+      "Type": "String",
+      "Default": "10.0.2.0/24",
+      "Description": "CIDR block for the private subnet"
+    },
+    "LambdaRoleArn": {
+      "Type": "String",
+      "Description": "ARN of the IAM role for the Lambda function"
+    },
+    "LambdaSecurityGroupId": {
+      "Type": "String",
+      "Description": "ID of the security group for the Lambda function"
+    },
+    "ElastiCacheSecurityGroupId": {
+      "Type": "String",
+      "Description": "ID of the security group for the ElastiCache cluster"
+    }
+  },
+  "Resources": {
+    "RedisVPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": { "Ref": "VpcCidrBlock" }
+      }
+    },
+    "PublicSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "RedisVPC" },
+        "CidrBlock": { "Ref": "PublicSubnetCidrBlock" },
+        "AvailabilityZone": "ap-south-1a",
+        "MapPublicIpOnLaunch": true
+      }
+    },
+    "PrivateSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "RedisVPC" },
+        "CidrBlock": { "Ref": "PrivateSubnetCidrBlock" },
+        "AvailabilityZone": "ap-south-1b"
+      }
+    },
+    "MyLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Handler": "index.handler",
+        "Role": { "Ref": "LambdaRoleArn" },
+        "FunctionName": "MyLambdaFunction",
+        "Runtime": "python3.12",
+        "Timeout": 30,
+        "VpcConfig": {
+          "SecurityGroupIds": [{ "Ref": "LambdaSecurityGroupId" }],
+          "SubnetIds": [{ "Ref": "PublicSubnet" }]
+        }
+      }
+    },
+    "LambdaSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Lambda Function Security Group",
+        "VpcId": { "Ref": "RedisVPC" }
+      }
+    },
+    "MyElastiCacheCluster": {
+      "Type": "AWS::ElastiCache::CacheCluster",
+      "Properties": {
+        "CacheNodeType": "cache.t2.micro",
+        "Engine": "redis",
+        "NumCacheNodes": 1,
+        "VpcSecurityGroupIds": [{ "Ref": "ElastiCacheSecurityGroupId" }],
+        "CacheSubnetGroupName": { "Ref": "MyCacheSubnetGroup" },
+        "PreferredAvailabilityZone": "ap-south-1b"
+      }
+    },
+    "ElastiCacheSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "ElastiCache Security Group",
+        "VpcId": { "Ref": "RedisVPC" }
+      }
+    },
+    "MyCacheSubnetGroup": {
+      "Type": "AWS::ElastiCache::SubnetGroup",
+      "Properties": {
+        "Description": "Subnet group for ElastiCache",
+        "SubnetIds": [{ "Ref": "PrivateSubnet" }]
+      }
+    }
+  }
+}

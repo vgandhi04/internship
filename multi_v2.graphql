@@ -1,0 +1,81 @@
+# This "input" configures a global authorization rule to enable public access to
+# all models in this schema. Learn more about authorization rules here: https://docs.amplify.aws/cli/graphql/authorization-rules
+# input AMPLIFY { globalAuthRule: AuthRule = { allow: public } } # FOR TESTING ONLY!
+
+type Movie
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  year: Int! @primaryKey(sortKeyFields: ["title"])
+  title: String!
+}
+
+type User
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  email: String!
+  roleOrg: [UserRoleOrg!]! @hasMany
+}
+
+type Org
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  userRole: [UserRoleOrg!]! @hasMany
+}
+
+type Role
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  name: String! @primaryKey
+}
+
+type UserRoleOrg
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  user: User! @hasOne
+  role: Role! @hasOne
+  org: Org! @hasOne
+}

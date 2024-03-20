@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS API Gateway Frontend</title>
+</head>
+<body>
+
+    <h1>AWS API Gateway Frontend</h1>
+
+    <button onclick="callApi()">Call API</button>
+
+    <div id="apiResponse"></div>
+
+    <script>
+        async function callApi() {
+            try {
+                const apiUrl = 'https://p4g5smv2m4.execute-api.ap-south-1.amazonaws.com/dev/movie';
+                const response = await fetch(apiUrl, {
+                    method: 'POST',  // Change the HTTP method as needed (GET, POST, PUT, DELETE, etc.)
+                    // Add headers if required, e.g., headers: { 'Authorization': 'Bearer YOUR_ACCESS_TOKEN' }
+                });
+
+                const data = await response.json();
+
+                document.getElementById('apiResponse').innerHTML = JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('Error calling API:', error);
+            }
+        }
+    </script>
+
+</body>
+</html>

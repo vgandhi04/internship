@@ -1,0 +1,88 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters": {
+    "env": {
+      "Type": "String"
+    },
+    "VpcCidrBlock": {
+      "Type": "String",
+      "Default": "10.0.0.0/16",
+      "Description": "CIDR block for the VPC"
+    },
+    "SubnetCidrBlock": {
+      "Type": "String",
+      "Default": "10.0.0.0/24",
+      "Description": "CIDR block for the subnet"
+    },
+    "CacheNodeType": {
+      "Type": "String",
+      "Default": "cache.t2.micro",
+      "Description": "ElastiCache node type"
+    }
+  },
+  "Resources": {
+    "MyVPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": { "Ref": "VpcCidrBlock" },
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "MyVPC"
+          }
+        ]
+      }
+    },
+    "MySubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "CidrBlock": { "Ref": "SubnetCidrBlock" },
+        "AvailabilityZone": { "Fn::Select": ["0", { "Fn::GetAZs": "" }] }
+      }
+    },
+    "MySecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "GroupDescription": "ElastiCache Security Group",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 6379,
+            "ToPort": 6379,
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "MyCacheSubnetGroup": {
+      "Type": "AWS::ElastiCache::SubnetGroup",
+      "Properties": {
+        "Description": "My ElastiCache Subnet Group",
+        "SubnetIds": [{ "Ref": "MySubnet" }]
+      }
+    },
+    "MyCacheCluster": {
+      "Type": "AWS::ElastiCache::CacheCluster",
+      "Properties": {
+        "CacheNodeType": { "Ref": "CacheNodeType" },
+        "Engine": "redis",
+        "NumCacheNodes": 1,
+        "VpcSecurityGroupIds": [
+          { "Fn::GetAtt": ["MySecurityGroup", "GroupId"] }
+        ],
+        "CacheSubnetGroupName": { "Ref": "MyCacheSubnetGroup" },
+        "Port": 6379
+      }
+    }
+  },
+  "Outputs": {
+    "RedisEndpoint": {
+      "Value": { "Fn::GetAtt": ["MyCacheCluster", "RedisEndpoint.Address"] },
+      "Description": "Endpoint for the Redis cluster"
+    }
+  }
+}

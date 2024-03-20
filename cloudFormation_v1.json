@@ -1,0 +1,187 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters": {
+    "env": {
+      "Type": "String"
+    },
+    "VpcCidrBlock": {
+      "Type": "String",
+      "Default": "10.0.0.0/16",
+      "Description": "CIDR block for the VPC"
+    },
+    "PublicSubnetCidrBlock": {
+      "Type": "String",
+      "Default": "10.0.1.0/24",
+      "Description": "CIDR block for the public subnet"
+    },
+    "PrivateSubnetCidrBlock": {
+      "Type": "String",
+      "Default": "10.0.2.0/24",
+      "Description": "CIDR block for the private subnet"
+    },
+    "CacheNodeType": {
+      "Type": "String",
+      "Default": "cache.t2.micro",
+      "Description": "ElastiCache node type"
+    }
+  },
+  "Resources": {
+    "MyVPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": { "Ref": "VpcCidrBlock" },
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "MyVPC"
+          }
+        ]
+      }
+    },
+    "PublicSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "CidrBlock": { "Ref": "PublicSubnetCidrBlock" },
+        "AvailabilityZone": "ap-south-1a"
+      }
+    },
+    "PrivateSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "CidrBlock": { "Ref": "PrivateSubnetCidrBlock" },
+        "AvailabilityZone": "ap-south-1b"
+      }
+    },
+    "MySecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "GroupDescription": "ElastiCache Security Group",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 6379,
+            "ToPort": 6379,
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "MyCacheSubnetGroup": {
+      "Type": "AWS::ElastiCache::SubnetGroup",
+      "Properties": {
+        "Description": "My ElastiCache Subnet Group",
+        "SubnetIds": [{ "Ref": "PrivateSubnet" }]
+      }
+    },
+    "MyCacheCluster": {
+      "Type": "AWS::ElastiCache::CacheCluster",
+      "Properties": {
+        "CacheNodeType": { "Ref": "CacheNodeType" },
+        "Engine": "redis",
+        "NumCacheNodes": 1,
+        "VpcSecurityGroupIds": [
+          { "Fn::GetAtt": ["MySecurityGroup", "GroupId"] }
+        ],
+        "CacheSubnetGroupName": { "Ref": "MyCacheSubnetGroup" },
+        "Port": 6379
+      }
+    },
+    "MyDynamoDBTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "Key",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "Key",
+            "KeyType": "HASH"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": 5,
+          "WriteCapacityUnits": 5
+        },
+        "TableName": "MyDynamoDBTable"
+      }
+    },
+    "MyLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Handler": "index.handler",
+        "Role": { "Fn::GetAtt": ["LambdaRole", "Arn"] },
+        "FunctionName": "MyLambdaFunction",
+        "Runtime": "python3.12",
+        "Timeout": 30,
+        "VpcConfig": {
+          "SecurityGroupIds": [{ "Fn::GetAtt": ["LambdaSecurityGroup", "GroupId"] }],
+          "SubnetIds": [{ "Ref": "PublicSubnet" }, { "Ref": "PrivateSubnet" }]
+        },
+        "Environment": {
+          "Variables": {
+            "REDIS_HOST": { "Fn::GetAtt": ["MyCacheCluster", "RedisEndpoint.Address"] },
+            "REDIS_PORT": { "Fn::GetAtt": ["MyCacheCluster", "RedisEndpoint.Port"] },
+            "DYNAMODB_TABLE_NAME": { "Ref": "MyDynamoDBTable" }
+          }
+        }
+      }
+    },
+    "LambdaSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "GroupDescription": "Lambda Function Security Group"
+      }
+    },
+    "LambdaRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "DynamoDBPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:Scan"
+                  ],
+                  "Resource": { "Fn::GetAtt": ["MyDynamoDBTable", "Arn"] }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "RedisEndpoint": {
+      "Value": { "Fn::GetAtt": ["MyCacheCluster", "RedisEndpoint.Address"] },
+      "Description": "Endpoint for the Redis cluster"
+    }
+  }
+}

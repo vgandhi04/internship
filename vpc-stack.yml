@@ -1,0 +1,348 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Tbr Back End - Network
+Parameters:
+  env:
+    Type: String
+    Default: prod
+  VPNEc2InstanceType:
+    Type: String
+    Description: Instance Family and size
+    Default: t3.micro
+  VPNAmiId:
+    Description: The ID of the AMI of Openvpn
+    # Default: ami-02b9074c1570a7cf2
+    Default: ami-0f95ee6f985388d58 #NV
+    Type: String
+Mappings: {}
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.40.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${env}-vpc'
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: 10.40.0.0/20
+      AvailabilityZone: !Sub '${AWS::Region}c'
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-vpc-subnet-az-a-internal
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-vpc-routetable-private-a
+  PrivateSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PrivateSubnetA'
+      RouteTableId: !Ref 'PrivateRouteTable'
+    DependsOn: PrivateRouteTable
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: 10.40.16.0/20
+      AvailabilityZone: !Sub '${AWS::Region}b'
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-vpc-subnet-az-b-internal
+  PrivateRouteTableSubnetB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-vpc-routetable-private-b
+  SubnetBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PrivateSubnetB'
+      RouteTableId: !Ref 'PrivateRouteTableSubnetB'
+    DependsOn: PrivateRouteTableSubnetB
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: 10.40.32.0/20
+      AvailabilityZone: !Sub '${AWS::Region}c'
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-vpc-subnet-az-a-public
+  PublicSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PublicSubnetA'
+      RouteTableId: !Ref 'PublicRouteTable'
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: 10.40.48.0/20
+      AvailabilityZone: !Sub '${AWS::Region}b'
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-vpc-subnet-az-b-public
+  PublicSubnetBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PublicSubnetB'
+      RouteTableId: !Ref 'PublicRouteTable'
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-vpc-routetable-public
+  NATEIPPUBLICSUBNETA:
+    DependsOn: AttachInternetGateway
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-vpc-eip-a
+  NATEIPPUBLICSUBNETB:
+    DependsOn: AttachInternetGateway
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-vpc-eip-b
+  NATGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt 'NATEIPPUBLICSUBNETA.AllocationId'
+      SubnetId: !Ref 'PublicSubnetA'
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-vpc-nat-a
+  NATGatewayPublicSubnetB:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt 'NATEIPPUBLICSUBNETB.AllocationId'
+      SubnetId: !Ref 'PublicSubnetB'
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-vpc-nat-b
+  NATInternetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref 'PrivateRouteTable'
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: !Ref 'NATGateway'
+    DependsOn: NATGateway
+  NATInternetRoutePublicSubnetB:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref 'PrivateRouteTableSubnetB'
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: !Ref 'NATGatewayPublicSubnetB'
+    DependsOn: NATGatewayPublicSubnetB
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for Tbr VPC
+      GroupName: !Sub ${env}-ec2-sg-private
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-ec2-sg-private
+      VpcId: !Ref 'VPC'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 10.40.0.0/16
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+  SecurityGroupOpenVPN:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for OpenVPN
+      GroupName: !Sub ${env}-ec2-sg-openvpn
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-ec2-sg-openvpn
+      VpcId: !Ref 'VPC'
+      SecurityGroupIngress:
+        - IpProtocol: udp
+          FromPort: 1194
+          ToPort: 1194
+          CidrIp: '0.0.0.0/0'
+          Description: OpenVPN Port
+        - IpProtocol: tcp
+          FromPort: 943
+          ToPort: 943
+          CidrIp: '0.0.0.0/0'
+          Description: OpenVPN Port
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-vpc-internet_gateway
+  AttachInternetGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref 'VPC'
+      InternetGatewayId: !Ref 'InternetGateway'
+  # PublicInternetRoute:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     RouteTableId: !Ref 'PublicRouteTable'
+  #     DestinationCidrBlock: '0.0.0.0/0'
+  #     GatewayId: !Ref 'InternetGateway'
+  #   DependsOn: InternetGateway
+  SecretsManagerEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      SubnetIds:
+        - !Ref 'PrivateSubnetA'
+        - !Ref 'PrivateSubnetB'
+      SecurityGroupIds:
+        - !Ref 'SecurityGroup'
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.secretsmanager'
+      VpcId: !Ref 'VPC'
+  S3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action:
+              - s3:*
+            Resource: "*"
+          - Effect: Allow
+            Principal: '*'
+            Action:
+              - sqs:*
+            Resource: "*"
+      RouteTableIds:
+        - !Ref 'PrivateRouteTable'
+        - !Ref 'PrivateRouteTableSubnetB'
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
+      VpcId: !Ref 'VPC'
+  iamOpenVpnRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      RoleName: !Sub ${env}-iam-role-openvpn
+  SecretsmanagerInstancePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: secretsmanagerpolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:*
+            Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${env}-openvpn*'
+      Roles:
+        - !Ref 'iamOpenVpnRole'
+  iamOpenVpnInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref 'iamOpenVpnRole'
+      InstanceProfileName: !Sub ${env}-instance-profile-openvpn
+  ec2Openvpn:
+    Type: AWS::EC2::Instance
+    Properties:
+      IamInstanceProfile: !Ref 'iamOpenVpnInstanceProfile'
+      ImageId: !Ref 'VPNAmiId'
+      InstanceType: !Ref 'VPNEc2InstanceType'
+      SubnetId: !Ref 'PublicSubnetA'
+      SecurityGroupIds:
+        - !Ref 'SecurityGroupOpenVPN'
+      UserData: !Base64
+        Fn::Sub: "#!/bin/bash\nsudo apt-get update\nsudo apt-get install jq curl unzip\
+          \ -y\ncurl 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' -o 'awscliv2.zip'\
+          \ && unzip awscliv2.zip && sudo ./aws/install\nsecret=`aws --region us-east-1\
+          \ secretsmanager get-secret-value --secret-id ${env}-openvpn --query SecretString\
+          \ --output text`\nsftppassword=`echo $secret | jq -r \".OpenVPNPassword\"\
+          `\necho \"openvpn:$sftppassword\" | sudo chpasswd"
+      DisableApiTermination: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${env}-ec2-openvpn
+        - Key: UsedBy
+          Value: OpenVPN
+  VPNec2Eip:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  VPNec2EipAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId: !Ref 'ec2Openvpn'
+      AllocationId: !GetAtt 'VPNec2Eip.AllocationId'
+
+Outputs:
+  TbrVPC:
+    Description: Tbr VPC.
+    Value: !Ref 'VPC'
+  TbrVPCSecurityGroup:
+    Description: The security group for the Tbr VPC.
+    Value: !Ref 'SecurityGroup'
+    Export:
+        Name: !Sub ${env}-ec2-sg-private
+  TbrPrivateSubnetA:
+    Description: Private Subnet A for Tbr VPC.
+    Value: !Ref 'PrivateSubnetA'
+    Export:
+        Name: !Sub ${env}-vpc-subnet-az-a-internal
+  TbrPrivateSubnetB:
+    Description: Private Subnet B for Tbr VPC.
+    Value: !Ref 'PrivateSubnetB'
+    Export:
+        Name: !Sub ${env}-vpc-subnet-az-b-internal
+  TbrPublicSubnetA:
+    Description: Private Subnet A for Tbr VPC.
+    Value: !Ref 'PublicSubnetA'
+  TbrPublicSubnetB:
+    Description: Public Subnet B for Tbr VPC.
+    Value: !Ref 'PublicSubnetB'
+  TbrRouteTable:
+    Description: Route table for Tbr VPC.
+    Value: !Ref 'PrivateRouteTable'
+  OpenVpnInstanceId:
+    Value: !Ref 'ec2Openvpn'
+    Description: OpenVPN Instance ID
+  OpenVPNServerURL:
+    Value: !Sub 'https://${VPNec2Eip}'
+    Description: OpenVPN URL
+
+

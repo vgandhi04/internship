@@ -1,0 +1,227 @@
+type User
+  @model(subscriptions: null)
+  @searchable
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "email"
+        identityClaim: "email"
+        operations: [create, read, update]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  photo: String
+  email: AWSEmail!
+    @index(name: "byEmail", queryField: "userByEmail", sortKeyFields: ["id"])
+    @auth(
+      rules: [
+        {
+          allow: private
+          provider: iam
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: groups
+          groups: ["SUPERADMIN"]
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "ADMIN"
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "email"
+          identityClaim: "email"
+          operations: [read]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "organization"
+          operations: [read]
+        }
+      ]
+    )
+  
+  firstName: String
+  lastName: String
+  designation: String
+  status: USER_STATUS
+    @default(value: "ENABLED")
+    @auth(
+      rules: [
+        {
+          allow: private
+          provider: iam
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: groups
+          groups: ["SUPERADMIN"]
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "ADMIN"
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "email"
+          identityClaim: "email"
+          operations: [read]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "organization"
+          operations: [read]
+        }
+      ]
+    )
+  role: USER_ROLE @default(value: "SME")
+  weight: Float
+    @default(value: "1")
+    @auth(
+      rules: [
+        {
+          allow: private
+          provider: iam
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: groups
+          groups: ["SUPERADMIN"]
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "ADMIN"
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "email"
+          identityClaim: "email"
+          operations: [read]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "organization"
+          operations: [read]
+        }
+      ]
+    )
+  organizationID: ID @index(name: "byOrganization")
+  Organization: Organization @belongsTo(fields: ["organizationID"])
+  
+  managerID: ID
+    @index(name: "byManager", queryField: "usersByManagerID")
+    @auth(
+      rules: [
+        {
+          allow: private
+          provider: iam
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: groups
+          groups: ["SUPERADMIN"]
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "ADMIN"
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "email"
+          identityClaim: "email"
+          operations: [read]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "organization"
+          operations: [read]
+        }
+      ]
+    )
+  Manager: User @hasOne(fields: ["managerID"])
+  
+}
+type Organization
+  @model(subscriptions: null)
+  @searchable
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "id"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "adminID"
+        identityClaim: "sub"
+        operations: [create, read, update]
+      }
+      {
+        allow: owner
+        ownerField: "id"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  vision: KeyValue
+  adminID: ID
+  Admin: User @hasOne(fields: ["adminID"])
+  Users: [User] @hasMany(indexName: "byOrganization", fields: ["id"])
+ 
+}
