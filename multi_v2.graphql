@@ -31,7 +31,11 @@ type User
   id: ID!
   name: String!
   email: String!
-  roleOrg: [UserRoleOrg!]! @hasMany
+  organizationID: ID @index(name: "orgID")
+  organization: Org @belongsTo (fields: ["organizationID"])
+
+  managerID: ID @index(name: "manID")
+  manager: [User] @hasMany (fields: ["managerID"])
 }
 
 type Org
@@ -47,35 +51,35 @@ type Org
   ) {
   id: ID!
   name: String!
-  userRole: [UserRoleOrg!]! @hasMany
+  user: [User] @hasMany (indexName: "orgID", fields: ["id"])
 }
 
-type Role
-  @model
-  @auth(
-    rules: [
-      {
-        allow: private
-        provider: iam
-        operations: [create, read, update, delete]
-      }
-    ]
-  ) {
-  name: String! @primaryKey
-}
+# type Role
+#   @model
+#   @auth(
+#     rules: [
+#       {
+#         allow: private
+#         provider: iam
+#         operations: [create, read, update, delete]
+#       }
+#     ]
+#   ) {
+#   name: String! @primaryKey
+# }
 
-type UserRoleOrg
-  @model
-  @auth(
-    rules: [
-      {
-        allow: private
-        provider: iam
-        operations: [create, read, update, delete]
-      }
-    ]
-  ) {
-  user: User! @hasOne
-  role: Role! @hasOne
-  org: Org! @hasOne
-}
+# type UserRoleOrg
+#   @model
+#   @auth(
+#     rules: [
+#       {
+#         allow: private
+#         provider: iam
+#         operations: [create, read, update, delete]
+#       }
+#     ]
+#   ) {
+#   user: User! @hasOne
+#   role: Role! @hasOne
+#   org: Org! @hasOne
+# }
