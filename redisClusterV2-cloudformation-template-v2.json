@@ -222,10 +222,7 @@
         "NumCacheNodes": 1,
         "VpcSecurityGroupIds": [
           {
-            "Fn::GetAtt": [
-              "ElastiCacheSecurityGroup",
-              "GroupId"
-            ]
+            "Fn::GetAtt": ["ElastiCacheSecurityGroup", "GroupId"]
           }
         ],
         "CacheSubnetGroupName": {
@@ -265,10 +262,7 @@
       "Type": "AWS::EC2::NatGateway",
       "Properties": {
         "AllocationId": {
-          "Fn::GetAtt": [
-            "NATGatewayEIP",
-            "AllocationId"
-          ]
+          "Fn::GetAtt": ["NATGatewayEIP", "AllocationId"]
         },
         "SubnetId": {
           "Ref": "PublicSubnet"
@@ -298,9 +292,7 @@
       }
     },
     "RouteNATGateway": {
-      "DependsOn": [
-        "NATGateway"
-      ],
+      "DependsOn": ["NATGateway"],
       "Type": "AWS::EC2::Route",
       "Properties": {
         "RouteTableId": {
@@ -346,10 +338,7 @@
     },
     "customredisClusterV2RedisEndpoint": {
       "Value": {
-        "Fn::GetAtt": [
-          "RedisCluster",
-          "RedisEndpoint.Address"
-        ]
+        "Fn::GetAtt": ["RedisCluster", "RedisEndpoint.Address"]
       },
       "Export": {
         "Name": {

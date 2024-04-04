@@ -1,0 +1,104 @@
+# This "input" configures a global authorization rule to enable public access to
+# all models in this schema. Learn more about authorization rules here: https://docs.amplify.aws/cli/graphql/authorization-rules
+# input AMPLIFY { globalAuthRule: AuthRule = { allow: public } } # FOR TESTING ONLY!
+
+type Movie
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        provider: userPools
+        groups: ["movie9a1f50e7_userpool_9a1f50e7-qa"]
+        operations: [create, read, update]
+      }
+    ]
+  ) {
+  year: Int! @primaryKey(sortKeyFields: ["title"])
+  title: String!
+  organizationID: ID @index(name: "byOrganization")
+  organization: Organization @belongsTo(fields: ["organizationID"])
+}
+
+type User
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String
+  email: String! @index(name: "byEmail")
+  # Organization information
+  # User [belongsTo] organization
+  # Index on organizationID. name is byOrganization.
+  # User [byOrganization] organizaionID
+  organizationID: ID @index(name: "byOrganization")
+  organization: Organization @belongsTo(fields: ["organizationID"])
+
+  # Manager Inforamtion
+  # User [hasMany] manager [byManager] managerID
+  # index on managerID. name is byManager
+  managerID: ID @index(name: "byManager")
+  manager: User @hasOne(fields: ["managerID"])
+}
+
+type Organization
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  # User information
+  # Organization [hasMany] User where index on [byOrganization]
+  # which match with the id of the org
+  user: [User] @hasMany(indexName: "byOrganization", fields: ["id"])
+  movie: [Movie] @hasMany(indexName: "byOrganization", fields: ["id"])
+}
+
+# type Role
+#   @model
+#   @auth(
+#     rules: [
+#       {
+#         allow: private
+#         provider: iam
+#         operations: [create, read, update, delete]
+#       }
+#     ]
+#   ) {
+#   name: String! @primaryKey
+# }
+
+# type UserRoleOrg
+#   @model
+#   @auth(
+#     rules: [
+#       {
+#         allow: private
+#         provider: iam
+#         operations: [create, read, update, delete]
+#       }
+#     ]
+#   ) {
+#   user: User! @hasOne
+#   role: Role! @hasOne
+#   org: Org! @hasOne
+# }

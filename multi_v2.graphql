@@ -32,10 +32,10 @@ type User
   name: String!
   email: String!
   organizationID: ID @index(name: "orgID")
-  organization: Org @belongsTo (fields: ["organizationID"])
+  organization: Org @belongsTo(fields: ["organizationID"])
 
   managerID: ID @index(name: "manID")
-  manager: [User] @hasMany (fields: ["managerID"])
+  manager: [User] @hasMany(fields: ["managerID"])
 }
 
 type Org
@@ -51,7 +51,8 @@ type Org
   ) {
   id: ID!
   name: String!
-  user: [User] @hasMany (indexName: "orgID", fields: ["id"])
+  user: [User] @hasMany(indexName: "orgID", fields: ["id"])
+  movie: [Movie] @hasMany(fields: ["id"])
 }
 
 # type Role
