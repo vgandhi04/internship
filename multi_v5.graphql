@@ -11,10 +11,20 @@ type Movie
         provider: iam
         operations: [create, read, update, delete]
       }
+      # {
+      #   allow: groups
+      #   groupsField: "organizationID"
+      #   operations: [create, read, update]
+      # }
       {
         allow: groups
-        groupsField: "organizationID"
-        operations: [create, read, update]
+        groupsField: "admin"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groupsField: "team"
+        operations: [read]
       }
     ]
   ) {
