@@ -1,0 +1,91 @@
+type Gamma
+  @model(subscriptions: null)
+  @searchable
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      { allow: groups, groups: ["LEADER"], operations: [create, read, update] }
+      {
+        allow: owner
+        ownerField: "sponsorID"
+        identityClaim: "sub"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "ownerEmail"
+        identityClaim: "email"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  friendlyId: Int
+
+  levelID: ID! @index(name: "byStage")
+  level: Stage @belongsTo(fields: ["levelID"])
+  levelHistory: [LevelChange] @hasMany(indexName: "byGamma", fields: ["id"])
+  title: String!
+  description: String!
+  # seperately storing measurement field inputs here for filtering, in addition to storing it in additionalfields
+  measurementFields: [measurementFieldUnit]
+
+  additionalFields: [Field]
+  rankHistory: [rankHistoryUnit]
+
+  mapping: GammaZapierMapping @hasOne(fields: ["id"])
+  userID: ID! @index(name: "byUser", queryField: "GammasByUserID")
+  organizationID: ID!
+    @index(
+      name: "byOrganization"
+      queryField: "gammasByOrganizationID"
+      sortKeyFields: ["fixedRank"]
+    )
+    @index(name: "byOrganizationAndTitle", sortKeyFields: ["title"])
+
+  Organization: Organization @belongsTo(fields: ["organizationID"])
+  departments: [ID]
+  # departments: [DepartmentGamma] @hasMany(indexName: "byGamma", fields: ["id"])
+  UserVotes: [UserVote] @hasMany(indexName: "byGamma", fields: ["id"])
+  user: User @belongsTo(fields: ["userID"])
+  ownerEmail: String
+  hiddenUsers: [HiddenUsersAndHiddenGammas]
+    @hasMany(indexName: "byGamma", fields: ["id"])
+  sponsorID: ID @index(name: "bySponsor", queryField: "GammasBySponsorID")
+  sponsor: User @belongsTo(fields: ["sponsorID"])
+  contributors: [ID]
+  # contributors: [GammasAndContributors]
+  #   @hasMany(indexName: "byGamma", fields: ["id"])
+  linkedTo: [LinkedGammas] @hasMany
+  userRatings: [UserRating] @hasMany(indexName: "byGamma", fields: ["id"])
+  fixedRank: Int
+    @default(value: "-1")
+    @index(
+      name: "byFixedRank"
+      queryField: "GammasByFixedRank"
+      sortKeyFields: ["organizationID"]
+    )
+  rank: [Int] @function(name: "rankCalculator-${env}")
+  updatedByIAM: Boolean @default(value: "false")
+}

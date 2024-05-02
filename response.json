@@ -1,0 +1,319 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET"
+    },
+    "body": {
+        "Organization": {
+            "gammas": {
+                "items": [
+                    {
+                        "createdAt": "2024-01-23T07:32:46.588Z",
+                        "id": "b6c64e80-4c7a-4b98-b09d-2a82aeabfc0b",
+                        "friendlyId": 5,
+                        "level": {
+                            "id": "6f12d821-ac79-4e47-b5ee-db3f5be0dd45",
+                            "name": "IDEA",
+                            "level": 1
+                        },
+                        "title": "Improve Revenue",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 0
+                    },
+                    {
+                        "createdAt": "2024-01-23T07:20:57.000Z",
+                        "id": "257d2b60-6a1c-440c-86c3-3351b25dd804",
+                        "friendlyId": 4,
+                        "level": {
+                            "id": "6f12d821-ac79-4e47-b5ee-db3f5be0dd45",
+                            "name": "IDEA",
+                            "level": 1
+                        },
+                        "title": "Give Gifts",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 0
+                    },
+                    {
+                        "createdAt": "2024-01-23T08:55:46.961Z",
+                        "id": "596f9a6e-7dd9-46c7-9e2f-6db9de0dfa5a",
+                        "friendlyId": 9,
+                        "level": {
+                            "id": "6f12d821-ac79-4e47-b5ee-db3f5be0dd45",
+                            "name": "IDEA",
+                            "level": 1
+                        },
+                        "title": "Employee Chair",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 0
+                    },
+                    {
+                        "createdAt": "2024-01-23T08:54:34.546Z",
+                        "id": "b39cde11-daac-4953-b68a-49a9b5d5627c",
+                        "friendlyId": 8,
+                        "level": {
+                            "id": "6f12d821-ac79-4e47-b5ee-db3f5be0dd45",
+                            "name": "IDEA",
+                            "level": 1
+                        },
+                        "title": "Idea 4",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 1
+                    },
+                    {
+                        "createdAt": "2024-01-23T08:53:22.631Z",
+                        "id": "89cbf539-6ee4-464a-85f8-35c15bb55a65",
+                        "friendlyId": 6,
+                        "level": {
+                            "id": "fad67eb7-fd20-4fd4-8a21-ccfbf9df2c55",
+                            "name": "OPPORTUNITY",
+                            "level": 2
+                        },
+                        "title": "Space Improve",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 7
+                    },
+                    {
+                        "createdAt": "2024-01-23T07:05:14.375Z",
+                        "id": "b86a6614-5bcc-47e8-a44a-f0bb583022f4",
+                        "friendlyId": 3,
+                        "level": {
+                            "id": "fad67eb7-fd20-4fd4-8a21-ccfbf9df2c55",
+                            "name": "OPPORTUNITY",
+                            "level": 2
+                        },
+                        "title": "Influencer Collaborations",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 7
+                    },
+                    {
+                        "createdAt": "2024-01-25T06:56:57.906Z",
+                        "id": "e692b8b3-a40f-422a-89dc-73dca0fe7f7d",
+                        "friendlyId": 15,
+                        "level": {
+                            "id": "6f12d821-ac79-4e47-b5ee-db3f5be0dd45",
+                            "name": "IDEA",
+                            "level": 1
+                        },
+                        "title": "updated idea new",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 0
+                    },
+                    {
+                        "createdAt": "2024-01-23T08:56:16.873Z",
+                        "id": "1122ec2b-b1e1-4fea-a2b4-5ca68d9649fe",
+                        "friendlyId": 10,
+                        "level": {
+                            "id": "6f12d821-ac79-4e47-b5ee-db3f5be0dd45",
+                            "name": "IDEA",
+                            "level": 1
+                        },
+                        "title": "Give MacBook",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 0
+                    },
+                    {
+                        "createdAt": "2024-01-23T08:57:11.156Z",
+                        "id": "70e39a74-a82a-4eee-b18a-f293b9573918",
+                        "friendlyId": 11,
+                        "level": {
+                            "id": "6f12d821-ac79-4e47-b5ee-db3f5be0dd45",
+                            "name": "IDEA",
+                            "level": 1
+                        },
+                        "title": "Increase Lunch Time",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 0
+                    },
+                    {
+                        "createdAt": "2024-01-23T08:54:09.884Z",
+                        "id": "c623f903-dea2-4194-bbbc-8663e2da9236",
+                        "friendlyId": 7,
+                        "level": {
+                            "id": "6f12d821-ac79-4e47-b5ee-db3f5be0dd45",
+                            "name": "IDEA",
+                            "level": 1
+                        },
+                        "title": "Time Management",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": [
+                                {
+                                    "department": {
+                                        "id": "d75210b2-6819-4dfe-b4c5-b4fb9743bb57",
+                                        "name": "test 1"
+                                    }
+                                }
+                            ]
+                        },
+                        "ratingsByUser": 0
+                    },
+                    {
+                        "createdAt": "2024-01-23T08:57:50.870Z",
+                        "id": "9a2d702b-14c1-4dbe-b2c4-5315870e34c1",
+                        "friendlyId": 12,
+                        "level": {
+                            "id": "6f12d821-ac79-4e47-b5ee-db3f5be0dd45",
+                            "name": "IDEA",
+                            "level": 1
+                        },
+                        "title": "Give Gifts",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 0
+                    },
+                    {
+                        "createdAt": "2024-01-23T07:05:14.375Z",
+                        "id": "ec11b302-a521-4d4b-a7c7-8d968c9da561",
+                        "friendlyId": 1,
+                        "level": {
+                            "id": "6f12d821-ac79-4e47-b5ee-db3f5be0dd45",
+                            "name": "IDEA",
+                            "level": 1
+                        },
+                        "title": "Loyalty Rewards Program",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 0
+                    },
+                    {
+                        "createdAt": "2024-01-25T06:42:53.602Z",
+                        "id": "366448d1-634f-4083-85a7-b34f8075ee52",
+                        "friendlyId": 14,
+                        "level": {
+                            "id": "6f12d821-ac79-4e47-b5ee-db3f5be0dd45",
+                            "name": "IDEA",
+                            "level": 1
+                        },
+                        "title": "test idea cmpare",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 0
+                    },
+                    {
+                        "createdAt": "2024-01-23T07:05:14.375Z",
+                        "id": "0b5ed337-7389-425d-b50c-14ab0aaa0a23",
+                        "friendlyId": 2,
+                        "level": {
+                            "id": "e1a07a01-307f-45c3-8a5e-467bda64e7b1",
+                            "name": "Won",
+                            "level": 4
+                        },
+                        "title": "Cross-Selling Initiatives",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 0
+                    },
+                    {
+                        "createdAt": "2024-01-24T05:41:00.331Z",
+                        "id": "4a0f26d7-7ee5-4ced-92a8-e8213a15b12b",
+                        "friendlyId": 13,
+                        "level": {
+                            "id": "6f12d821-ac79-4e47-b5ee-db3f5be0dd45",
+                            "name": "IDEA",
+                            "level": 1
+                        },
+                        "title": "Lorem ipsum dolor sit amet consectetur adipiscing elit",
+                        "hiddenUsers": {
+                            "items": []
+                        },
+                        "departments": {
+                            "items": []
+                        },
+                        "ratingsByUser": 0
+                    }
+                ],
+                "nextToken": null
+            },
+            "objectives": {
+                "items": [
+                    {
+                        "id": "b002fe19-dbd6-49c7-8cdf-d9f49ea621bc"
+                    },
+                    {
+                        "id": "68b39fac-be83-403d-b410-c64cb57510d9"
+                    },
+                    {
+                        "id": "7672a06d-5f35-4094-8c52-dfbb4925c14e"
+                    },
+                    {
+                        "id": "a36ac16e-197e-42a8-ac4a-94b02cb2097e"
+                    },
+                    {
+                        "id": "3be12084-d958-4351-b6b6-c7cafc152734"
+                    },
+                    {
+                        "id": "c753773d-095c-44c1-89c4-1a570466c1ae"
+                    },
+                    {
+                        "id": "cad5762f-9182-4e2f-8f06-cd857b524b07"
+                    }
+                ]
+            }
+        }
+    }
+}

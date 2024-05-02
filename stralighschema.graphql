@@ -1,0 +1,1741 @@
+type ApiKey
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  organizationID: ID! @index(name: "byOrganization")
+  Organization: Organization @belongsTo(fields: ["organizationID"])
+  key: String! @index(name: "byKey")
+  keyID: String!
+  disabled: Boolean! @default(value: "true")
+}
+
+type WebhooksSubscription
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  organizationID: ID! @index(name: "byOrganization")
+  typeName: TYPE_NAME!
+  eventName: EVENT_NAME!
+  hookUrl: AWSURL!
+}
+
+type LoginHistory
+  @model(subscriptions: null)
+  @searchable
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      { allow: private, provider: userPools, operations: [read] }
+    ]
+  ) {
+  userID: ID!
+    @primaryKey(sortKeyFields: ["date"])
+    @index(name: "byUser", sortKeyFields: ["date"])
+  User: User @belongsTo(fields: ["userID"])
+  date: AWSDate!
+  datetime: AWSDateTime
+}
+
+type LatestRankStatus
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  organizationID: ID! @primaryKey
+  organization: Organization @hasOne(fields: ["organizationID"])
+  timestamp: AWSDateTime
+}
+
+type UserRating
+  @model(subscriptions: null)
+  @searchable
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+      {
+        allow: owner
+        identityClaim: "email"
+        operations: [create, read, update]
+      }
+    ]
+  ) {
+  id: ID!
+  userID: ID! @index(name: "byUser", sortKeyFields: ["gammaID"])
+  User: User @belongsTo(fields: ["userID"])
+  organizationID: ID! @index(name: "byOrganization", sortKeyFields: ["userID"])
+  Organization: Organization @belongsTo(fields: ["organizationID"])
+  gammaID: ID! @index(name: "byGamma")
+  Gamma: Gamma @belongsTo(fields: ["gammaID"])
+  rating: Float!
+  weight: Float! @default(value: "1")
+  userRatingObjectiveId: ID!
+    @index(name: "byObjective", queryField: "userRatingByObjectiveID")
+  Objective: Objective! @hasOne(fields: ["userRatingObjectiveId"])
+}
+
+type PriorityBatchUnit {
+  weight: Float!
+  ObjectiveID: ID!
+}
+
+type DepartmentFilters {
+  included: Boolean
+  departmentID: [ID]
+  weight: [Float]
+  field: AWSJSON
+}
+
+type UserFilters {
+  included: Boolean
+  userID: [ID]
+  weight: [Float]
+  field: AWSJSON
+}
+
+type UserRoleFilters {
+  included: Boolean
+  userROLE: [USER_ROLE]
+  weight: [Float]
+  field: AWSJSON
+}
+
+type voteFilter {
+  departmentFilters: DepartmentFilters
+  userRoleFilters: UserRoleFilters
+  userFilters: UserFilters
+}
+
+type voteFilters {
+  match: MATCH
+  filters: [voteFilter]
+}
+
+type ModelMeasurementFilter {
+  ne: Float
+  eq: Float
+  le: Float
+  lt: Float
+  ge: Float
+  gt: Float
+  between: [Float]
+  notBetween: [Float]
+}
+
+type ModelFieldFilter {
+  oneOf: [ID]
+  notOneOf: [ID]
+}
+
+type FieldFilter {
+  fieldID: ID!
+  filter: ModelFieldFilter!
+  blanks: Boolean!
+  field: AWSJSON!
+}
+
+type FieldFilters {
+  match: MATCH
+  filters: [FieldFilter]
+}
+
+type MeasurementFieldFilter {
+  measurementField: AWSJSON!
+  measurementFieldID: ID!
+  blanks: Boolean!
+  threshold: Float
+  filter: ModelMeasurementFilter!
+}
+type MeasurementFieldFilters {
+  match: MATCH
+  filters: [MeasurementFieldFilter]
+}
+
+# allow custom here also
+# type PriorityBatchesAndUsers
+#   @model(subscriptions: null)
+#   @auth(
+#     rules: [
+#       {
+#         allow: private
+#         provider: iam
+#         operations: [create, read, update, delete]
+#       }
+#       {
+#         allow: groups
+#         groups: ["SUPERADMIN", "ADMIN"]
+#         operations: [create, read, update, delete]
+#       }
+#       { allow: groups, groups: ["LEADER"], operations: [create, read] }
+#       {
+#         allow: owner
+#         ownerField: "userId"
+#         identityClaim: "sub"
+#         operations: [create, read]
+#       }
+#     ]
+#   ) {
+#   id: ID!
+#   priorityBatchId: ID! @index(name: "byPriorityBatch")
+#   userId: ID! @index(name: "byUser")
+#   priorityBatch: PriorityBatch! @belongsTo(fields: ["priorityBatchId"])
+#   user: User! @belongsTo(fields: ["userId"])
+# }
+
+enum MATCH {
+  ONE
+  ALL
+}
+
+type PriorityBatch
+  @model(subscriptions: null)
+  @searchable
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      # { allow: groups, groups: ["LEADER"], operations: [create] }
+      {
+        allow: owner
+        ownerField: "owners"
+        identityClaim: "sub"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  title: String!
+  priorities: [PriorityBatchUnit]
+  voteFilters: voteFilters
+  measurementFieldFilters: MeasurementFieldFilters
+  fieldFilters: FieldFilters
+  public: Boolean! @default(value: "true")
+  organizationID: ID
+    @index(
+      name: "byOrganization"
+      queryField: "priorityBatchesByOrganizationID"
+    )
+  Organization: Organization @belongsTo(fields: ["organizationID"])
+  # ownersEmails: [String]
+  owners: [ID] #@hasMany(indexName: "byPriorityBatch", fields: ["id"])
+  updatedAtBy: AWSJSON
+}
+
+type Objective
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationObjectivesId"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      { allow: groups, groups: ["LEADER"], operations: [create, read] }
+      {
+        allow: owner
+        ownerField: "ownerId"
+        identityClaim: "sub"
+        operations: [create, read, update]
+      }
+      {
+        allow: owner
+        ownerField: "organizationObjectivesId"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  description: String
+  active: Boolean @default(value: "true")
+  organizationObjectivesId: ID @index(name: "byOrganization")
+  Organization: Organization! @belongsTo(fields: ["organizationObjectivesId"])
+  ownerId: ID! @index(name: "byUser")
+  owner: User @belongsTo(fields: ["ownerId"])
+  Departments: [ObjectivesAndDepartments]
+    @hasMany(indexName: "byObjective", fields: ["id"])
+}
+
+type UserVote
+  @model(subscriptions: null)
+  @searchable
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  vote: Float!
+  weight: Float! @default(value: "1")
+  userID: ID! @index(name: "byUser")
+  User: User @belongsTo(fields: ["userID"])
+  organizationID: ID! @index(name: "byOrganization", sortKeyFields: ["userID"])
+  Organization: Organization @belongsTo(fields: ["organizationID"])
+  gammaID: ID! @index(name: "byGamma")
+  Gamma: Gamma @belongsTo(fields: ["gammaID"])
+  vsGamma: Gamma @hasOne
+  userVoteObjectiveId: ID! @index(name: "byObjective")
+  Objective: Objective! @hasOne(fields: ["userVoteObjectiveId"])
+  voteTime: Int
+}
+
+type PriorityBatchObjectiveWiseScoreData
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  priorityBatchID: ID!
+    @primaryKey(sortKeyFields: ["objectiveID", "gammaID"])
+    @index(name: "byPriorityBatch")
+  PriorityBatch: PriorityBatch @hasOne(fields: ["priorityBatchID"])
+  objectiveID: ID!
+  Objective: Objective @hasOne(fields: ["objectiveID"])
+  gammaID: ID! @index(name: "byGamma")
+  Gamma: Gamma @hasOne(fields: ["gammaID"])
+  organizationID: ID!
+    @index(
+      name: "byOrganization"
+      sortKeyFields: ["priorityBatchID", "objectiveID", "gammaID"]
+    )
+  Organization: Organization @hasOne(fields: ["organizationID"])
+  value: Float!
+}
+
+type Department
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  organizationID: ID!
+    @index(name: "byOrganization", queryField: "departmentsByOrganizationID")
+  organization: Organization @belongsTo(fields: ["organizationID"])
+  # DepartmentsAndGammas: [DepartmentGamma]
+  #   @hasMany(indexName: "byDepartment", fields: ["id"])
+  Users: [User] @hasMany(indexName: "byDepartment", fields: ["id"])
+  Objectives: [ObjectivesAndDepartments]
+    @hasMany(indexName: "byDepartment", fields: ["id"])
+  managerID: ID @index(name: "byManager", queryField: "departmentByManagerID")
+  Manager: User @hasOne(fields: ["managerID"])
+}
+
+type WeightConfig {
+  role: USER_ROLE
+  weight: Float!
+}
+
+type KeyValue {
+  key: String
+  value: String
+}
+
+type Organization
+  @model(subscriptions: null)
+  @searchable
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "id"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "adminID"
+        identityClaim: "sub"
+        operations: [create, read, update]
+      }
+      {
+        allow: owner
+        ownerField: "id"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  vision: KeyValue
+  apiKeys: [ApiKey] @hasMany(indexName: "byOrganization", fields: ["id"])
+  stages: [Stage] @hasMany(indexName: "byOrganization", fields: ["id"])
+  Departments: [Department]
+    @hasMany(indexName: "byOrganization", fields: ["id"])
+  adminID: ID
+  Admin: User @hasOne(fields: ["adminID"])
+  Users: [User] @hasMany(indexName: "byOrganization", fields: ["id"])
+  UserVotes: [UserVote] @hasMany(indexName: "byOrganization", fields: ["id"])
+  UserRatings: [UserRating]
+    @hasMany(indexName: "byOrganization", fields: ["id"])
+  gammas: [Gamma] @hasMany(indexName: "byOrganization", fields: ["id"])
+  gammaCount: Int @default(value: "0")
+  organizationDefaultPrioirtybatchId: ID
+  defaultPrioirtybatch: PriorityBatch
+    @hasOne(fields: ["organizationDefaultPrioirtybatchId"])
+  priorityBatches: [PriorityBatch]
+    @hasMany(indexName: "byOrganization", fields: ["id"])
+  winningCriteria: AWSJSON
+  scoreWeightages: AWSJSON
+  objectives: [Objective] @hasMany(indexName: "byOrganization", fields: ["id"])
+  categoryValues: AWSJSON
+  weightSettings: [WeightConfig]
+  comparisonFlags: AWSJSON
+  ratingFlags: AWSJSON
+  invitationReminderConfig: AWSJSON
+  inactivityReminderConfig: AWSJSON
+  scenarioWeightsFlag: Boolean @default(value: "false")
+  measurementFields: [MeasurementField]
+    @hasMany(indexName: "byOrganization", fields: ["id"])
+}
+
+enum USER_ROLE {
+  SME
+  LEADER
+  ADMIN
+  SUPERADMIN
+}
+
+enum COMPARISON_PREFERENCE {
+  AA1
+  AA2
+  AB1
+  AB2
+  AC1
+  AC2
+  BA1
+  BA2
+  BB1
+  BB2
+  BC1
+  BC2
+}
+
+enum USER_STATUS {
+  ENABLED
+  CONFIRMED
+  DISABLED
+  INVITED
+  ACTIVE
+  INACTIVE
+}
+enum TYPE_NAME {
+  GAMMA
+  OBJECTIVE
+  USER
+}
+
+enum EVENT_NAME {
+  INSERT
+  MODIFY
+  REMOVE
+}
+
+type Form {
+  layout: AWSJSON
+}
+
+type FormDraft
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  stageID: ID! @primaryKey(sortKeyFields: ["version"]) @index(name: "byStage")
+  name: String
+  layout: AWSJSON
+  version: Int!
+  updatedByIAM: Boolean @default(value: "false")
+  Stage: Stage @belongsTo(fields: ["stageID"])
+  organizationID: ID! @index(name: "byOrganization")
+  Organization: Organization @hasOne(fields: ["organizationID"])
+}
+
+type Stage
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  active: Boolean @default(value: "false")
+  level: Int!
+  form: Form!
+  draft: [FormDraft] @hasMany(indexName: "byStage", fields: ["id"])
+  updatedByIAM: Boolean @default(value: "false")
+  gammas: [Gamma] @hasMany(indexName: "byStage", fields: ["id"])
+  measurementFieldConnection: [MeasurementFieldStageConnection]
+    @hasMany(indexName: "byStage", fields: ["id"])
+  organizationID: ID!
+    @index(
+      name: "byOrganization"
+      queryField: "stagesByOrganizationID"
+      sortKeyFields: ["level"]
+    )
+    @index(name: "byOrganizationAndName", sortKeyFields: ["name"])
+  Organization: Organization @belongsTo(fields: ["organizationID"])
+}
+
+type LevelChange
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN", "ADMIN"]
+        operations: [create, read, update, delete]
+      }
+      { allow: groups, groups: ["LEADER"], operations: [create, read] }
+      { allow: private, provider: userPools, operations: [read] }
+    ]
+  ) {
+  id: ID!
+  previousID: ID!
+  previous: Stage @hasOne(fields: ["previousID"])
+  presentID: ID!
+  present: Stage @hasOne(fields: ["presentID"])
+  gammaLevelHistoryId: ID @index(name: "byGamma", sortKeyFields: ["changedAt"])
+  gamma: Gamma! @belongsTo(fields: ["gammaLevelHistoryId"])
+  changedAt: AWSDateTime!
+  userID: ID @index(name: "byUser")
+  changedBy: User @hasOne(fields: ["userID"])
+}
+
+type InactivityReminderStatus
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  userID: ID! @primaryKey
+  user: User @belongsTo(fields: ["userID"])
+}
+
+type InvitationReminderStatus
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  userID: ID! @primaryKey
+  user: User @belongsTo(fields: ["userID"])
+}
+
+type UserSignOutStatus
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "userID"
+        identityClaim: "sub"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  userID: ID! @index(name: "byUser")
+}
+
+# A record in this table shows that Scheduled Comparison Creator function was recently invoked for a user
+
+type ComparisonCreatorStatus
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  userID: ID! @primaryKey
+  expiry: AWSTimestamp! @ttl
+}
+
+type ScoreCalculationStatus
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  organizationID: ID! @primaryKey(sortKeyFields: ["gammaID"])
+  gammaID: ID!
+  expiry: AWSTimestamp! @ttl
+}
+
+type RankCalculationStatus
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  organizationID: ID! @primaryKey(sortKeyFields: ["priorityBatchID"])
+  priorityBatchID: ID!
+  expiry: AWSTimestamp! @ttl
+}
+
+type User
+  @model(subscriptions: null)
+  @searchable
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "email"
+        identityClaim: "email"
+        operations: [create, read, update]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  photo: String
+  email: AWSEmail!
+    @index(name: "byEmail", queryField: "userByEmail", sortKeyFields: ["id"])
+    @auth(
+      rules: [
+        {
+          allow: private
+          provider: iam
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: groups
+          groups: ["SUPERADMIN"]
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "ADMIN"
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "email"
+          identityClaim: "email"
+          operations: [read]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "organization"
+          operations: [read]
+        }
+      ]
+    )
+  gammas: [Gamma] @hasMany(indexName: "byUser", fields: ["id"])
+  hiddenGammas: [HiddenUsersAndHiddenGammas]
+    @hasMany(indexName: "byUser", fields: ["id"])
+  sponsoring: [Gamma] @hasMany(indexName: "bySponsor", fields: ["id"])
+  # contributions: [GammasAndContributors]
+  #   @hasMany(indexName: "byUser", fields: ["id"])
+  firstName: String
+  lastName: String
+  lastLogin: AWSDateTime
+  designation: String
+  status: USER_STATUS
+    @default(value: "ENABLED")
+    @auth(
+      rules: [
+        {
+          allow: private
+          provider: iam
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: groups
+          groups: ["SUPERADMIN"]
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "ADMIN"
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "email"
+          identityClaim: "email"
+          operations: [read]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "organization"
+          operations: [read]
+        }
+      ]
+    )
+  role: USER_ROLE @default(value: "SME")
+  weight: Float
+    @default(value: "1")
+    @auth(
+      rules: [
+        {
+          allow: private
+          provider: iam
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: groups
+          groups: ["SUPERADMIN"]
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "ADMIN"
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "email"
+          identityClaim: "email"
+          operations: [read]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "organization"
+          operations: [read]
+        }
+      ]
+    )
+  organizationID: ID @index(name: "byOrganization")
+  Organization: Organization @belongsTo(fields: ["organizationID"])
+  departmentID: ID
+    @index(name: "byDepartment")
+    @auth(
+      rules: [
+        {
+          allow: private
+          provider: iam
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: groups
+          groups: ["SUPERADMIN"]
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "ADMIN"
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "email"
+          identityClaim: "email"
+          operations: [read]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "organization"
+          operations: [read]
+        }
+      ]
+    )
+  Department: Department @belongsTo(fields: ["departmentID"])
+  managerID: ID
+    @index(name: "byManager", queryField: "usersByManagerID")
+    @auth(
+      rules: [
+        {
+          allow: private
+          provider: iam
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: groups
+          groups: ["SUPERADMIN"]
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "ADMIN"
+          operations: [create, read, update, delete]
+        }
+        {
+          allow: owner
+          ownerField: "email"
+          identityClaim: "email"
+          operations: [read]
+        }
+        {
+          allow: owner
+          ownerField: "organizationID"
+          identityClaim: "organization"
+          operations: [read]
+        }
+      ]
+    )
+  Manager: User @hasOne(fields: ["managerID"])
+  UserVotes: [UserVote] @hasMany(indexName: "byUser", fields: ["id"])
+  LoginHistory: [LoginHistory] @hasMany(indexName: "byUser", fields: ["id"])
+  objectives: [Objective] @hasMany(indexName: "byUser", fields: ["id"])
+  # priorityBatches: [PriorityBatchesAndUsers]
+  #   @hasMany(indexName: "byUser", fields: ["id"])
+  UserRatings: [UserRating] @hasMany(indexName: "byUser", fields: ["id"])
+  invitationReminderStatus: InvitationReminderStatus @hasOne(fields: ["id"])
+  inactivityReminderStatus: InactivityReminderStatus @hasOne(fields: ["id"])
+}
+
+type LinkedGammas
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      { allow: private, provider: userPools, operations: [read] }
+      {
+        allow: owner
+        identityClaim: "email"
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  gammaLinkedToId: ID
+    @index(name: "byGamma", queryField: "LinkedGammasbyGammaID")
+
+  gamma: Gamma @belongsTo(fields: ["gammaLinkedToId"])
+  linkedGammasLinkedGammaId: ID
+    @index(name: "byLinkedGamma", queryField: "LinkedGammasbyLinkedID")
+  linkedGamma: Gamma @hasOne(fields: ["linkedGammasLinkedGammaId"])
+}
+
+type Value {
+  text: String
+  updatedAtBy: AWSJSON
+}
+type Field {
+  name: String!
+  value: [Value]
+}
+type Comparison
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "userID"
+        identityClaim: "sub"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  gamma1ID: ID! @index(name: "byGamma1")
+  gamma1: Gamma @hasOne(fields: ["gamma1ID"])
+  gamma2ID: ID! @index(name: "byGamma2")
+  gamma2: Gamma @hasOne(fields: ["gamma2ID"])
+  objectiveID: ID! @index(name: "byObjective")
+  objective: Objective! @hasOne(fields: ["objectiveID"])
+  preference: COMPARISON_PREFERENCE
+  userID: ID!
+    @index(
+      name: "byUser"
+      sortKeyFields: ["preference"]
+      queryField: "comparisonsByUserID"
+    )
+  user: User! @hasOne(fields: ["userID"])
+  expiry: AWSTimestamp! @ttl
+}
+
+type breakpoint {
+  label: String!
+  value: Float!
+}
+type MeasurementField
+  @model(subscriptions: null)
+  @searchable
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  description: String
+  type: String! # can be +-, #
+  subType: String! # can be +-, -+, #, $
+  breakpoints: [breakpoint]
+  isMeasurement: Boolean @default(value: "true")
+  organizationID: ID!
+    @index(
+      name: "byOrganization"
+      sortKeyFields: ["name"]
+      queryField: "measurementFieldsByOrganizationID"
+    )
+  Organization: Organization @belongsTo(fields: ["organizationID"])
+  StageConnection: [MeasurementFieldStageConnection]
+    @hasMany(indexName: "byMeasurementField", fields: ["id"])
+}
+
+type MeasurementFieldStageConnection
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  measurementFieldID: ID!
+    @primaryKey(sortKeyFields: ["stageID"])
+    @index(name: "byMeasurementField")
+  stageID: ID! @index(name: "byStage")
+  measurementField: MeasurementField @belongsTo(fields: ["measurementFieldID"])
+  stage: Stage @belongsTo(fields: ["stageID"])
+  organizationID: ID! @index(name: "byOrganization")
+  Organization: Organization @hasOne(fields: ["organizationID"])
+}
+
+type ObjectivesAndDepartments
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN", "ADMIN"]
+        operations: [create, read, update, delete]
+      }
+      { allow: groups, groups: ["LEADER"], operations: [create, read] }
+      {
+        allow: owner
+        ownerField: "ownerID"
+        identityClaim: "sub"
+        operations: [update, delete]
+      }
+      { allow: private, provider: userPools, operations: [read] }
+    ]
+  ) {
+  id: ID!
+  objectiveID: ID! @index(name: "byObjective")
+  departmentID: ID! @index(name: "byDepartment")
+  objective: Objective! @belongsTo(fields: ["objectiveID"])
+  department: Department @belongsTo(fields: ["departmentID"])
+  ownerID: ID!
+}
+
+# type GammasAndContributors
+#   @model(subscriptions: null)
+#   @auth(
+#     rules: [
+#       {
+#         allow: private
+#         provider: iam
+#         operations: [create, read, update, delete]
+#       }
+#       {
+#         allow: groups
+#         groups: ["SUPERADMIN", "ADMIN", "LEADER"]
+#         operations: [create, read, update, delete]
+#       }
+#       { allow: private, provider: userPools, operations: [read] }
+#       { allow: custom }
+#     ]
+#   ) {
+#   id: ID!
+#   userId: ID! @index(name: "byUser")
+#   gammaId: ID! @index(name: "byGamma")
+#   user: User! @belongsTo(fields: ["userId"])
+#   gamma: Gamma! @belongsTo(fields: ["gammaId"])
+# }
+
+# type DepartmentGamma
+#   @model(subscriptions: null)
+#   @auth(
+#     rules: [
+#       {
+#         allow: private
+#         provider: iam
+#         operations: [create, read, update, delete]
+#       }
+#       {
+#         allow: groups
+#         groups: ["SUPERADMIN", "ADMIN", "LEADER", "SME"]
+#         operations: [create, read, update, delete]
+#       }
+#       { allow: private, provider: userPools, operations: [read] }
+#       { allow: custom }
+#     ]
+#   ) {
+#   id: ID!
+#   departmentId: ID! @index(name: "byDepartment")
+#   gammaId: ID! @index(name: "byGamma")
+#   department: Department @belongsTo(fields: ["departmentId"])
+#   gamma: Gamma! @belongsTo(fields: ["gammaId"])
+#   organizationID: ID @index(name: "byOrganization")
+#   Organization: Organization @hasOne(fields: ["organizationID"])
+# }
+
+type HiddenUsersAndHiddenGammas
+  @model(subscriptions: null)
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN", "ADMIN", "LEADER"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "userId"
+        identityClaim: "sub"
+        operations: [create, read, update, delete]
+      }
+      { allow: private, provider: userPools, operations: [read] }
+      { allow: custom }
+    ]
+  ) {
+  id: ID!
+  userId: ID! @index(name: "byUser")
+  gammaId: ID! @index(name: "byGamma")
+  user: User! @belongsTo(fields: ["userId"])
+  gamma: Gamma! @belongsTo(fields: ["gammaId"])
+}
+
+type measurementFieldUnit {
+  measurementFieldID: ID!
+  value: Float!
+}
+
+type rankHistoryUnit {
+  D: AWSDate!
+  R: Int!
+  S: ID!
+}
+
+type Gamma
+  @model(subscriptions: null)
+  @searchable
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "ADMIN"
+        operations: [create, read, update, delete]
+      }
+      { allow: groups, groups: ["LEADER"], operations: [create, read, update] }
+      {
+        allow: owner
+        ownerField: "sponsorID"
+        identityClaim: "sub"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "ownerEmail"
+        identityClaim: "email"
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "organizationID"
+        identityClaim: "organization"
+        operations: [read]
+      }
+    ]
+  ) {
+  id: ID!
+  friendlyId: Int
+
+  levelID: ID! @index(name: "byStage")
+  level: Stage @belongsTo(fields: ["levelID"])
+  levelHistory: [LevelChange] @hasMany(indexName: "byGamma", fields: ["id"])
+  title: String!
+  description: String!
+  # seperately storing measurement field inputs here for filtering, in addition to storing it in additionalfields
+  measurementFields: [measurementFieldUnit]
+
+  additionalFields: [Field]
+  rankHistory: [rankHistoryUnit]
+
+  mapping: GammaZapierMapping @hasOne(fields: ["id"])
+  userID: ID! @index(name: "byUser", queryField: "GammasByUserID")
+  organizationID: ID!
+    @index(
+      name: "byOrganization"
+      queryField: "gammasByOrganizationID"
+      sortKeyFields: ["fixedRank"]
+    )
+    @index(name: "byOrganizationAndTitle", sortKeyFields: ["title"])
+
+  Organization: Organization @belongsTo(fields: ["organizationID"])
+  departments: [ID]
+  # departments: [DepartmentGamma] @hasMany(indexName: "byGamma", fields: ["id"])
+  UserVotes: [UserVote] @hasMany(indexName: "byGamma", fields: ["id"])
+  user: User @belongsTo(fields: ["userID"])
+  ownerEmail: String
+  hiddenUsers: [HiddenUsersAndHiddenGammas]
+    @hasMany(indexName: "byGamma", fields: ["id"])
+  sponsorID: ID @index(name: "bySponsor", queryField: "GammasBySponsorID")
+  sponsor: User @belongsTo(fields: ["sponsorID"])
+  contributors: [ID]
+  # contributors: [GammasAndContributors]
+  #   @hasMany(indexName: "byGamma", fields: ["id"])
+  linkedTo: [LinkedGammas] @hasMany
+  userRatings: [UserRating] @hasMany(indexName: "byGamma", fields: ["id"])
+  fixedRank: Int
+    @default(value: "-1")
+    @index(
+      name: "byFixedRank"
+      queryField: "GammasByFixedRank"
+      sortKeyFields: ["organizationID"]
+    )
+  rank: [Int] @function(name: "rankCalculator-${env}")
+  updatedByIAM: Boolean @default(value: "false")
+}
+
+type GammaZapierMapping
+  @model(subscriptions: null)
+  @searchable
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  gammaID: ID! @primaryKey
+  organizationID: ID! @index(name: "byOrganization")
+  Gamma: Gamma @belongsTo(fields: ["gammaID"])
+  mapping: String @index(name: "byMapping")
+  metadata: AWSJSON
+}
+
+enum NOTIFICATION_TYPE {
+  GENERAL
+  IMPORTANT
+}
+
+type Notification
+  @model
+  @auth(
+    rules: [
+      {
+        allow: private
+        provider: iam
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: groups
+        groups: ["SUPERADMIN"]
+        operations: [create, read, update, delete]
+      }
+      {
+        allow: owner
+        ownerField: "userID"
+        identityClaim: "sub"
+        operations: [create, read, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  Message: String!
+  isRead: Boolean @default(value: "false")
+  type: NOTIFICATION_TYPE @default(value: "GENERAL")
+  userID: ID!
+    @index(
+      name: "SortedNotificationByUser"
+      queryField: "NotificationByUser"
+      sortKeyFields: ["createdAt"]
+    )
+  UserDetails: User @hasOne(fields: ["userID"])
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+  metadata: AWSJSON
+}
+
+type Query @aws_iam @aws_cognito_user_pools {
+  fuzzySearchGammas(
+    title: String!
+    organizationID: String!
+    limit: Int
+    nextToken: String
+  ): FuzzySearchableGammaConnection
+  listUsersComparisonCount(
+    organizationID: String!
+    limit: Int
+    nextToken: String
+  ): SearchableAggregateBucketResultConnection
+  listUsersRatingCount(
+    organizationID: String!
+    limit: Int
+    nextToken: String
+  ): SearchableAggregateBucketResultConnection
+
+  getGammaUserVotesAggregates(
+    gammaID: String!
+  ): OrganizationGammaUserVoteAggregateBucketResultConnection
+  getGammaUserRatingsAggregates(
+    gammaID: String!
+  ): OrganizationGammaUserRatingAggregateBucketResultConnection
+  getOrganizationGammaUserVotesAggregates(
+    organizationID: String!
+  ): OrganizationGammaUserVoteAggregateBucketResultConnection
+  getOrganizationGammaUserRatingsAggregates(
+    organizationID: String!
+  ): OrganizationGammaUserRatingAggregateBucketResultConnection
+}
+
+type FuzzySearchableGammaConnection @aws_iam @aws_cognito_user_pools {
+  items: [Gamma]
+  nextToken: String
+  total: Int
+}
+
+type AggregateBucketResultValue @aws_iam @aws_cognito_user_pools {
+  value: Float
+}
+
+type AggregateBucketResultKeyDocCount @aws_iam @aws_cognito_user_pools {
+  key: String
+  doc_count: Int
+}
+
+type UserVoteAggregateResults @aws_iam @aws_cognito_user_pools {
+  key: String
+  doc_count: Int
+  unique_users: [AggregateBucketResultKeyDocCount]
+}
+type UserRatingAggregateResults @aws_iam @aws_cognito_user_pools {
+  key: String
+  doc_count: Int
+  ratings_sum: AggregateBucketResultValue
+}
+
+type AggregateBucketResults @aws_iam @aws_cognito_user_pools {
+  key: String
+  value: Float
+}
+
+type SearchableAggregateBucketResults @aws_iam @aws_cognito_user_pools {
+  key: ID
+  doc_count: Int
+  gammaIDs: AggregateBucketResultValue
+}
+
+type SearchableAggregateBucketResultConnection
+  @aws_iam
+  @aws_cognito_user_pools {
+  buckets: [SearchableAggregateBucketResults]
+  total: Int
+}
+
+type UserRatingAggregateBucketResults @aws_iam @aws_cognito_user_pools {
+  key: ID
+  doc_count: Int
+  unique_users: [UserRatingAggregateResults]
+}
+
+type UserVoteAggregateBucketResults @aws_iam @aws_cognito_user_pools {
+  key: ID
+  doc_count: Int
+  votes: [UserVoteAggregateResults]
+}
+
+type UserVoteAggregateBucketResultConnection @aws_iam @aws_cognito_user_pools {
+  buckets: [UserVoteAggregateBucketResults]
+  total: Int
+}
+
+type OrganizationUserVoteAggregateBucketResults
+  @aws_iam
+  @aws_cognito_user_pools {
+  key: ID
+  doc_count: Int
+  buckets: [UserVoteAggregateBucketResults]
+}
+
+type OrganizationUserRatingAggregateBucketResults
+  @aws_iam
+  @aws_cognito_user_pools {
+  key: ID
+  doc_count: Int
+  buckets: [UserRatingAggregateBucketResults]
+}
+
+type OrganizationGammaUserVoteAggregateBucketResultConnection
+  @aws_iam
+  @aws_cognito_user_pools {
+  buckets: [OrganizationUserVoteAggregateBucketResults]
+  total: Int
+}
+
+type OrganizationGammaUserRatingAggregateBucketResultConnection
+  @aws_iam
+  @aws_cognito_user_pools {
+  buckets: [OrganizationUserRatingAggregateBucketResults]
+  total: Int
+}
+
+type UserRatingAggregateBucketResultConnection
+  @aws_iam
+  @aws_cognito_user_pools {
+  buckets: [UserRatingAggregateBucketResults]
+  total: Int
+}
+
+input FieldInput {
+  name: String!
+  value: [ValueInput]
+}
+
+input ValueInput {
+  text: String
+  updatedAtBy: AWSJSON
+}
+
+input UpdateOrganizationGammaCountInput {
+  id: ID!
+  name: String
+  gammaCount: Int
+  winningCriteria: AWSJSON
+  scoreWeightages: AWSJSON
+  categoryValues: AWSJSON
+  organizationDefaultPrioirtybatchId: ID
+}
+
+# input BatchCreateGammasAndContributorsInput {
+#   id: ID
+#   userId: ID!
+#   gammaId: ID!
+# }
+
+# input BatchCreateDepartmentGammaInput {
+#   id: ID
+#   departmentId: ID!
+#   gammaId: ID!
+# }
+
+# type BatchGammasAndContributors @aws_iam @aws_cognito_user_pools {
+#   id: ID!
+#   userId: ID!
+#   gammaId: ID!
+#   user: User!
+#   gamma: Gamma!
+# }
+
+# type BatchDepartmentGamma @aws_iam @aws_cognito_user_pools {
+#   id: ID!
+#   departmentId: ID!
+#   gammaId: ID!
+#   department: Department
+#   gamma: Gamma!
+# }
+# input DeletePriorityBatchesAndUsersInput {
+#   id: ID!
+# }
+
+type Mutation {
+  updateOrganizationGammaCount(
+    input: UpdateOrganizationGammaCountInput!
+  ): Organization @aws_iam @aws_cognito_user_pools
+  # batchCreateGammasAndContributors(
+  #   gammasAndContributors: [BatchCreateGammasAndContributorsInput!]
+  # ): [BatchGammasAndContributors]
+  #   @function(name: "batchCreateGammasAndContributors-${env}")
+  #   @aws_iam
+  #   @aws_cognito_user_pools
+  # batchCreateDepartmentGammas(
+  #   inputs: [BatchCreateDepartmentGammaInput!]
+  # ): [BatchDepartmentGamma]
+  #   @function(name: "batchCreateDepartmentGamma-${env}")
+  #   @aws_iam
+  #   @aws_cognito_user_pools
+
+  # deletePriorityBatchesAndUsersExtended(
+  #   input: [DeletePriorityBatchesAndUsersInput!]
+  # ): PriorityBatch
+  #   @function(name: "deletePriorityBatchesAndUsers-${env}")
+  #   @aws_iam
+  #   @aws_cognito_user_pools
+}
+
