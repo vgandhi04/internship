@@ -333,97 +333,92 @@ def get_rate():
         print("user_ratings_data", user_ratings_data)
         
         # vivek start
-            
-        request = {}
-        if sort_field and sort_direction:
-            
-            request["query"] = {
+        
+        request = {
+            "query": {
                 "bool": {
-                    "must": [
-                        {
-                            "term": {
-                                "organizationID.keyword": organization_id
-                            }
-                        },
-                        {
-                            "bool": {
-                                "should": [
-                                    {
-                                        "wildcard": {
-                                            "title.keyword": {
-                                                "value": "*" + search + "*" if search else "*",
-                                                "case_insensitive": True
-                                            }
-                                        }
-                                    }
-                                ]
-                            }
+                    "must": [{
+                        "term": {
+                            "organizationID.keyword": organization_id
                         }
-                    ]
+                    }]
                 }
-            }
-            if search:
-                if search.isdigit():
-                    # formatted_search = "{:06}".format(int(search))
-                    friendly_id_query = {
-                        "wildcard": {
-                            "friendlyId.keyword": {
-                                "value": "*" + search + "*",
+            },
+            "_source": ["createdAt", "id", "friendlyId", "levelID", "title", "departments", "description"]
+        }
+        
+        if search:
+            if search.isdigit():
+                search_query = {
+                        "script": {
+                            "script": {
+                                "source": f"doc['friendlyId'].value.toString().contains('{search}')"
                             }
                         }
                     }
-                    request["query"]["bool"]["must"][1]["bool"]["should"].append(friendly_id_query)
+            else:
+                search_query = {
+                        "wildcard": {
+                            "title.keyword": {
+                                "value": "*" + search + "*" if search else "*",
+                                "case_insensitive": True
+                            }
+                        }                        
+                    }
                 
-            if sort_field in ["title"]:
-                request["sort"] = [{
-                        f"{sort_field}.keyword": {
-                            "order": sort_direction.lower()
-                        }
-                    }]
-            elif sort_field == "friendlyId":
-                request["sort"] = [{
-                    sort_field: {
+            request["query"]["bool"]["must"].append(search_query)
+    
+        print("sort_field b", sort_field)
+        if sort_field in ["title"]:
+            request["sort"] = [{
+                    f"{sort_field}.keyword": {
                         "order": sort_direction.lower()
                     }
                 }]
-            request["_source"]= ["createdAt", "id", "friendlyId", "levelID", "title", "departments", "description"]
+        elif sort_field == "friendlyId":
             
-            print("request", request)
-            
-            response = OPENSEARCH_CLIENT.search(
-                body=request,
-                index=INDEX_NAME
-            )
-            print("Response - ", response)
-            
-            sorted_gammas = response['hits']['hits']
-            # print("sorted data count - ", sorted_gammas)
-            print("stage details - ", stage_details)
-            vivek_gamma = []
-            for gamma in sorted_gammas:
-                level_id = gamma['_source']['levelID']
-                if level_id in stage_details:
-                    level_info = stage_details[level_id]
-                    formatted_level = {
-                        "level": {
-                            "id": level_info['id'],
-                            "name": level_info['name'],
-                            "level": level_info['level']
-                        }
-                    }
-                    gamma['_source'].update(formatted_level)
-                    # formatted_data.append(item)
-                gamma_n = {
-                    "id" : gamma['_source']['id'],
-                    "friendlyId": gamma['_source']['friendlyId'],
-                    "title": gamma['_source']['title'],
-                    "description": gamma['_source']['description'],
-                    "level": gamma['_source']['level'],
-                    "createdAt": gamma['_source']['createdAt'],
-                    "departments": gamma['_source']['departments'],
+            request["sort"] = [{
+                sort_field: {
+                    "order": sort_direction.lower()
                 }
-                vivek_gamma.append(gamma_n)
-            print("sorted data count - ", sorted_gammas)
+            }]
+        
+        print("request", request)
+        
+        response = OPENSEARCH_CLIENT.search(
+            body=request,
+            index=INDEX_NAME
+        )
+        print("Response - ", response)
+        
+        sorted_gammas = response['hits']['hits']
+        # print("sorted data count - ", sorted_gammas)
+        print("stage details - ", stage_details)
+        vivek_gamma = []
+        for gamma in sorted_gammas:
+            level_id = gamma['_source']['levelID']
+            if level_id in stage_details:
+                level_info = stage_details[level_id]
+                formatted_level = {
+                    "level": {
+                        "id": level_info['id'],
+                        "name": level_info['name'],
+                        "level": level_info['level']
+                    }
+                }
+                gamma['_source'].update(formatted_level)
+                # formatted_data.append(item)
+            gamma_n = {
+                "id" : gamma['_source']['id'],
+                "friendlyId": gamma['_source']['friendlyId'],
+                "title": gamma['_source']['title'],
+                "description": gamma['_source']['description'],
+                "level": gamma['_source']['level'],
+                "createdAt": gamma['_source']['createdAt'],
+                "departments": gamma['_source']['departments'],
+            }
+            vivek_gamma.append(gamma_n)
+        print("sorted data count - ", sorted_gammas)
             
             
             
