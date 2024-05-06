@@ -1738,9 +1738,9 @@ def get_rankings():
                 "bool": {
                     "must": [
                         {
-                            "term": {
-                                "organizationID.keyword": organization_id
-                            }
+                                "term": {
+                                    "organizationID.keyword": organization_id
+                                }
                         },
                         {
                             "wildcard": {

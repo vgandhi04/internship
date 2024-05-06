@@ -271,6 +271,7 @@ def get_rate():
     
     sort_field = app.current_request.query_params.get("sort_field", "friendlyId")
     sort_direction = app.current_request.query_params.get("sort_direction", "asc")
+    search = app.current_request.query_params.get("search", None)
     
     # Vivek en
     
@@ -334,7 +335,7 @@ def get_rate():
         # vivek start
             
         request = {}
-        if sort_field == "friendlyId" and sort_direction:
+        if sort_field and sort_direction:
             
             request["query"] = {
                 "bool": {
@@ -343,18 +344,52 @@ def get_rate():
                             "term": {
                                 "organizationID.keyword": organization_id
                             }
+                        },
+                        {
+                            "bool": {
+                                "should": [
+                                    {
+                                        "wildcard": {
+                                            "title.keyword": {
+                                                "value": "*" + search + "*" if search else "*",
+                                                "case_insensitive": True
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
                         }
                     ]
                 }
             }
-            request["sort"] = [{
-                    "friendlyId": {
+            if search:
+                if search.isdigit():
+                    # formatted_search = "{:06}".format(int(search))
+                    friendly_id_query = {
+                        "wildcard": {
+                            "friendlyId.keyword": {
+                                "value": "*" + search + "*",
+                            }
+                        }
+                    }
+                    request["query"]["bool"]["must"][1]["bool"]["should"].append(friendly_id_query)
+                
+            if sort_field in ["title"]:
+                request["sort"] = [{
+                        f"{sort_field}.keyword": {
+                            "order": sort_direction.lower()
+                        }
+                    }]
+            elif sort_field == "friendlyId":
+                request["sort"] = [{
+                    sort_field: {
                         "order": sort_direction.lower()
                     }
                 }]
             request["_source"]= ["createdAt", "id", "friendlyId", "levelID", "title", "departments", "description"]
             
             print("request", request)
+            
             response = OPENSEARCH_CLIENT.search(
                 body=request,
                 index=INDEX_NAME
@@ -379,13 +414,13 @@ def get_rate():
                     gamma['_source'].update(formatted_level)
                     # formatted_data.append(item)
                 gamma_n = {
-                    "id" : gamma['_source']["id"],
-                    "friendlyId": gamma['_source']["friendlyId"],
-                    "title": gamma['_source']["title"],
-                    "description": gamma['_source']["description"],
-                    "level": gamma["_source"]["level"],
-                    "createdAt": gamma["_source"]["createdAt"],
-                    "departments": gamma["_source"]["departments"],
+                    "id" : gamma['_source']['id'],
+                    "friendlyId": gamma['_source']['friendlyId'],
+                    "title": gamma['_source']['title'],
+                    "description": gamma['_source']['description'],
+                    "level": gamma['_source']['level'],
+                    "createdAt": gamma['_source']['createdAt'],
+                    "departments": gamma['_source']['departments'],
                 }
                 vivek_gamma.append(gamma_n)
             print("sorted data count - ", sorted_gammas)
