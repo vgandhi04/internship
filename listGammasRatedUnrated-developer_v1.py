@@ -265,17 +265,24 @@ GQL_CLIENT = get_graphql_client()
 def get_rate():
     
     # Vivek start
-    
+    PAGE_SIZE = 1000
     OPENSEARCH_CLIENT = get_global_opensearch_client()
     INDEX_NAME = 'gamma'
     
     sort_field = app.current_request.query_params.get("sort_field", "friendlyId")
     sort_direction = app.current_request.query_params.get("sort_direction", "asc")
     search = app.current_request.query_params.get("search", None)
+    search = None if search == "null" else search
+    start = 0
+    filter_v = '{"byMe":"","Ranks":{},"Stage":{"675ae877-02a1-43ae-bb5b-433062d319ff":false,"7351657c-125c-4af1-b319-fcb072da9656":true,"72b0ca62-7211-4e53-aa43-88e386b1041f":false},"Department":["86a6d3f3-6251-4b13-86eb-4c1e2047d039"]}'
+    filter_v = app.current_request.query_params.get('filter', "{}")
     
-    # Vivek en
     
+    print("filter", filter_v)
+    filter_v = json.loads(filter_v)
+    print("filter", filter_v)
     
+    # Vivek End     
     user_id = app.current_request.query_params.get("id", None)
     organization_id = app.current_request.query_params.get(
         "organizationID", None)
@@ -333,7 +340,40 @@ def get_rate():
         print("user_ratings_data", user_ratings_data)
         
         # vivek start
-        
+        filters = []
+        if filter_v:
+            if filter_v.get('Stage'):
+                stages = [stage for stage, checked in filter_v['Stage'].items() if checked]
+                
+                filters.append(
+                    {
+                        "terms": {
+                            "levelID.keyword": stages
+                        }
+                    }
+                )
+
+            if filter_v.get('Created'):
+                filters.append(
+                    {
+                        "range": {
+                            "createdAt": {
+                                "gte": filter_v['Created'][0],
+                                "lte": filter_v['Created'][1]
+                            }
+                        }
+                    }
+                )
+            
+            if filter_v.get('Department'):
+                filters.append(
+                    {
+                        "terms": {
+                            "departments.keyword": filter_v['Department']
+                        }
+                    }
+                )
+                
         request = {
             "query": {
                 "bool": {
@@ -341,10 +381,13 @@ def get_rate():
                         "term": {
                             "organizationID.keyword": organization_id
                         }
-                    }]
+                    }],
+                    "filter": filters
                 }
             },
-            "_source": ["createdAt", "id", "friendlyId", "levelID", "title", "departments", "description"]
+            "_source": ["createdAt", "id", "friendlyId", "levelID", "title", "departments", "description"],
+            "from": start, 
+            "size": PAGE_SIZE 
         }
         
         if search:
@@ -430,7 +473,6 @@ def get_rate():
             gamma["ratingsByUser"] = user_ratings_data.get(gamma["id"], 0)
             gamma["departments"] = {"items": [{"department": {
                 "id": department, "name": departments_data[department]}} for department in existing_departments if departments_data.get(department)]}
-            
             
             
         payload = {
