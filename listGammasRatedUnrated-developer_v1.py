@@ -48,8 +48,8 @@ def get_global_stage_table():
     return STAGE_TABLE
 
 def get_stages(organization_id, stage_details):
-    stages_response = get_global_stage_table().query(KeyConditionExpression=Key(
-        'organizationID').eq(organization_id),
+    stages_response = get_global_stage_table().query(
+        KeyConditionExpression=Key('organizationID').eq(organization_id),
         IndexName='byOrganization',
         ProjectionExpression='id,#n,#l',
         ExpressionAttributeNames={'#n': 'name', '#l': 'level'}
@@ -58,7 +58,11 @@ def get_stages(organization_id, stage_details):
     print("stages_response", stages_response)
 
     stage_details.update({
-        stage['id']: {'id': stage['id'], 'name': stage['name'], 'level': int(stage['level'])} for stage in stages_response['Items']})
+        stage['id']: {
+            'id': stage['id'], 
+            'name': stage['name'], 
+            'level': int(stage['level'])
+            } for stage in stages_response['Items']})
 
 # Vivek END
 
@@ -171,21 +175,21 @@ def get_user_ratings_data(gql_client, user_id, user_ratings_data):
         "nextToken": None
     }
     user_ratings = []
-    user_ratings = get_GQL_paginated(
-        gql_client, get_user_ratings_by_user_query, params, "userRatingsByUserIDAndGammaID", user_ratings)
+    user_ratings = get_GQL_paginated(gql_client, get_user_ratings_by_user_query, params, "userRatingsByUserIDAndGammaID", user_ratings)
 
-    unique_user_ratings = set(
-        (item["gammaID"], item["userRatingObjectiveId"],) for item in user_ratings if item["Objective"]["active"])
+    print("user_ratings - ", user_ratings)
+    unique_user_ratings = set((item["gammaID"], item["userRatingObjectiveId"],) for item in user_ratings if item["Objective"]["active"])
+    print("unique_user_ratings - ", unique_user_ratings)
     for combination in unique_user_ratings:
         gamma_id, _ = combination
         user_ratings_data[gamma_id] = user_ratings_data.get(gamma_id, 0) + 1
+    print("get_user_ratings_data - ", get_user_ratings_data)
     return user_ratings_data
 
 
 def get_departments_by_organization(organization_id, departments_data):
     departments_response = get_global_department_table().query(
-        KeyConditionExpression=Key(
-            'organizationID').eq(organization_id),
+        KeyConditionExpression=Key('organizationID').eq(organization_id),
         IndexName='byOrganization',
         ProjectionExpression='id,#n',
         ExpressionAttributeNames={'#n': 'name'}
@@ -274,7 +278,7 @@ def get_rate():
     search = app.current_request.query_params.get("search", None)
     search = None if search == "null" else search
     start = 0
-    filter_v = '{"byMe":"","Ranks":{},"Stage":{"675ae877-02a1-43ae-bb5b-433062d319ff":false,"7351657c-125c-4af1-b319-fcb072da9656":true,"72b0ca62-7211-4e53-aa43-88e386b1041f":false},"Department":["86a6d3f3-6251-4b13-86eb-4c1e2047d039"]}'
+    # filter_v = '{"byMe":"","Ranks":{},"Stage":{"675ae877-02a1-43ae-bb5b-433062d319ff":false,"7351657c-125c-4af1-b319-fcb072da9656":true,"72b0ca62-7211-4e53-aa43-88e386b1041f":false},"Department":["86a6d3f3-6251-4b13-86eb-4c1e2047d039"]}'
     filter_v = app.current_request.query_params.get('filter', "{}")
     
     
@@ -385,7 +389,7 @@ def get_rate():
                     "filter": filters
                 }
             },
-            "_source": ["createdAt", "id", "friendlyId", "levelID", "title", "departments", "description"],
+            "_source": ["createdAt", "id", "friendlyId", "levelID", "title", "departments"],
             "from": start, 
             "size": PAGE_SIZE 
         }
@@ -412,17 +416,53 @@ def get_rate():
             request["query"]["bool"]["must"].append(search_query)
     
         print("sort_field b", sort_field)
-        if sort_field in ["title"]:
+        if sort_field == "title":
+        
             request["sort"] = [{
                     f"{sort_field}.keyword": {
                         "order": sort_direction.lower()
                     }
                 }]
+        
         elif sort_field == "friendlyId":
             
             request["sort"] = [{
                 sort_field: {
                     "order": sort_direction.lower()
+                }
+            }]
+        
+        elif sort_field == "level":
+            
+            request["sort"] = [{
+                "_script": {
+                    "type": "number",
+                    "order": sort_direction.lower(),
+                    "script": {
+                        "lang": "painless",
+                        "source": "def levelID = doc['levelID.keyword'].value; if (params.scores.containsKey(levelID)) { return params.scores[levelID]; } else { return 1000; }",
+                        "params": {
+                            "scores": {
+                                stage: info['level'] for stage, info in stage_details.items()
+                            }
+                        }
+                    }
+                }
+            }]
+        
+        elif sort_field == "ratingsByUser":
+            print("!!!!")
+            request["sort"] = [{
+                "_script": {
+                    "type": "number",
+                    "order": "asc" if sort_direction.lower() == "desc" else "desc",
+                    "script": {
+                        "lang": "painless",
+                        "source": "def gammeID = doc['id.keyword'].value; if (params.scores.containsKey(gammeID)) { return params.scores[gammeID]; } else { return 0; }",
+                        "params": {
+                            "scores": {id_name: rating for id_name, rating in user_ratings_data.items()}
+                        }
+                    }
                 }
             }]
         
@@ -438,6 +478,7 @@ def get_rate():
         # print("sorted data count - ", sorted_gammas)
         print("stage details - ", stage_details)
         vivek_gamma = []
+
         for gamma in sorted_gammas:
             level_id = gamma['_source']['levelID']
             if level_id in stage_details:
@@ -450,35 +491,41 @@ def get_rate():
                     }
                 }
                 gamma['_source'].update(formatted_level)
-                # formatted_data.append(item)
+            
+            gamma['_source']["ratingsByUser"] = user_ratings_data.get(gamma['_source']["id"], 0)
+                
+            existing_departments = gamma['_source']["departments"][:]
+            gamma['_source']["departments"] = {
+                "items": [{
+                    "department": {
+                        "id": department, 
+                        "name": departments_data.get(department)
+                    }
+                } for department in existing_departments if departments_data.get(department)
+                ]
+            }
+            
             gamma_n = {
-                "id" : gamma['_source']['id'],
+                "id": gamma['_source']['id'],
                 "friendlyId": gamma['_source']['friendlyId'],
                 "title": gamma['_source']['title'],
-                "description": gamma['_source']['description'],
                 "level": gamma['_source']['level'],
                 "createdAt": gamma['_source']['createdAt'],
                 "departments": gamma['_source']['departments'],
+                "ratingsByUser": gamma['_source']['ratingsByUser'],
             }
             vivek_gamma.append(gamma_n)
-        print("sorted data count - ", sorted_gammas)
-            
-            
-            
-        # vivek end
+
+        print("sorted data count - ", vivek_gamma)
         
-        
-        for gamma in vivek_gamma: #vivek
-            existing_departments = gamma["departments"][:]
-            gamma["ratingsByUser"] = user_ratings_data.get(gamma["id"], 0)
-            gamma["departments"] = {"items": [{"department": {
-                "id": department, "name": departments_data[department]}} for department in existing_departments if departments_data.get(department)]}
-            
-            
+        # Vivek end
+    
         payload = {
             "Organization": {
-                "gammas": {"items": vivek_gamma, #Vivek
-                           "nextToken": nextToken},
+                "gammas": {
+                    "items": vivek_gamma, #Vivek
+                    # "nextToken": nextToken
+                },
                 "objectives": {"items": objectives}
             }
         }
