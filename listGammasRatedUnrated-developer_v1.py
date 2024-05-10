@@ -57,7 +57,12 @@ def get_stages(organization_id, stage_details):
     print("stages_response", stages_response)
 
     stage_details.update({
-        stage['id']: {'id': stage['id'], 'name': stage['name'], 'level': int(stage['level'])} for stage in stages_response['Items']})
+        stage['id']: {
+            'id': stage['id'],
+            'name': stage['name'], 
+            'level': int(stage['level'])
+        } for stage in stages_response['Items']
+    })
 
 # Vivek END
 
