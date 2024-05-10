@@ -57,12 +57,7 @@ def get_stages(organization_id, stage_details):
     print("stages_response", stages_response)
 
     stage_details.update({
-        stage['id']: {
-            'id': stage['id'], 
-            'name': stage['name'], 
-            'level': int(stage['level'])
-        } for stage in stages_response['Items']
-    })
+        stage['id']: {'id': stage['id'], 'name': stage['name'], 'level': int(stage['level'])} for stage in stages_response['Items']})
 
 # Vivek END
 
@@ -441,41 +436,7 @@ def get_rate():
                 }
             }]
         
-        elif sort_field == "level":
-            
-            request["sort"] = [{
-                "_script": {
-                    "type": "number",
-                    "order": sort_direction.lower(),
-                    "script": {
-                        "lang": "painless",
-                        "source": "def levelID = doc['levelID.keyword'].value; if (params.scores.containsKey(levelID)) { return params.scores[levelID]; } else { return 1000; }",
-                        "params": {
-                            "scores": {
-                                stage: info['level'] for stage, info in stage_details.items()
-                            }
-                        }
-                    }
-                }
-            }]
-        
-        elif sort_field == "ratingsByUser":
-            print("!!!!")
-            request["sort"] = [{
-                "_script": {
-                    "type": "number",
-                    "order": "asc" if sort_direction.lower() == "desc" else "desc",
-                    "script": {
-                        "lang": "painless",
-                        "source": "def gammeID = doc['id.keyword'].value; if (params.scores.containsKey(gammeID)) { return params.scores[gammeID]; } else { return 0; }",
-                        "params": {
-                            "scores": {id_name: rating for id_name, rating in user_ratings_data.items()}
-                        }
-                    }
-                }
-            }]
-        
-        print("request - ", request)
+        print("request", request)
         
         response = OPENSEARCH_CLIENT.search(
             body=request,
