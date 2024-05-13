@@ -58,7 +58,7 @@ def get_stages(organization_id, stage_details):
 
     stage_details.update({
         stage['id']: {
-            'id': stage['id'],
+            'id': stage['id'], 
             'name': stage['name'], 
             'level': int(stage['level'])
         } for stage in stages_response['Items']
@@ -100,37 +100,38 @@ get_org_query = gql(
     """
 )
 
-get_gammas_by_org_query = gql(
-    """
-    query gammasByOrganizationID($organizationID: ID!, $userID: ID, $nextToken: String) {
-        gammasByOrganizationID(organizationID: $organizationID, nextToken:$nextToken) {
-            nextToken
-            items {
-                createdAt
-                id
-                friendlyId
-                level {
-                    id
-                    name
-                    level
-                }
-                title
-                hiddenUsers(filter: {userId: {eq: $userID}}) {
-                    items {
-                        gammaId
-                        id
-                        userId
-                    }
-                }
-                departments
+# Commented by Vivek
+# get_gammas_by_org_query = gql(
+#     """
+#     query gammasByOrganizationID($organizationID: ID!, $userID: ID, $nextToken: String) {
+#         gammasByOrganizationID(organizationID: $organizationID, nextToken:$nextToken) {
+#             nextToken
+#             items {
+#                 createdAt
+#                 id
+#                 friendlyId
+#                 level {
+#                     id
+#                     name
+#                     level
+#                 }
+#                 title
+#                 hiddenUsers(filter: {userId: {eq: $userID}}) {
+#                     items {
+#                         gammaId
+#                         id
+#                         userId
+#                     }
+#                 }
+#                 departments
 
                 
-            }
+#             }
             
-        }
-    }
-    """
-)
+#         }
+#     }
+#     """
+# )
 
 
 def get_graphql_client():
@@ -198,68 +199,68 @@ def get_departments_by_organization(organization_id, departments_data):
         departments_data[department['id']] = department['name']
     return departments_data
 
+# Commented by Vivek
+# def input_filter_string_maker(disabled_levels):
+#     levels = len(disabled_levels)
+#     level_input_list = [
+#         f"$levelID{i}:ID" for i in range(1, levels+1)]
+#     level_filter_str = [f"$levelID{i}" for i in range(1, levels+1)]
+#     level_filter_list = []
+#     for level in level_filter_str:
+#         level_filter_list.append({"levelID": {"ne": level}})
+#     level_filter_str = ','.join(
+#         str(i) for i in level_filter_list).replace("'", "")
+#     level_input_str = ','.join(str(i)
+#                                for i in level_input_list).replace("'", "")
+#     return level_input_str, level_filter_str
 
-def input_filter_string_maker(disabled_levels):
-    levels = len(disabled_levels)
-    level_input_list = [
-        f"$levelID{i}:ID" for i in range(1, levels+1)]
-    level_filter_str = [f"$levelID{i}" for i in range(1, levels+1)]
-    level_filter_list = []
-    for level in level_filter_str:
-        level_filter_list.append({"levelID": {"ne": level}})
-    level_filter_str = ','.join(
-        str(i) for i in level_filter_list).replace("'", "")
-    level_input_str = ','.join(str(i)
-                               for i in level_input_list).replace("'", "")
-    return level_input_str, level_filter_str
+# Commented by Vivek
+# def get_enabled_level_gammas(gql_client, organization_id, user_id,  disabled_levels, gammas_data, nextToken):
+#     params = {}
+#     if disabled_levels == []:
+#         query = get_gammas_by_org_query
+#     else:
+#         input_str, filter_str = input_filter_string_maker(disabled_levels)
+#         params = {
+#             f"levelID{i}": disabled_levels[i-1] for i in range(1, len(disabled_levels)+1)
+#         }
+#         query = gql(
+#             f"""
+#             query gammasByOrganizationID($organizationID:ID!, $userID:ID, $nextToken:String, {input_str} ) {{
+#             gammasByOrganizationID(organizationID:$organizationID, nextToken:$nextToken, filter: {{and:[{filter_str}]}}) {{
+#                 nextToken
+#                 items {{
+#                 createdAt
+#                 id
+#                 friendlyId
+#                 level {{
+#                     id
+#                     name
+#                     level
+#                 }}
+#                 title
+#                 hiddenUsers(filter: {{userId: {{eq: $userID}}}}) {{
+#                     items {{
+#                         gammaId
+#                         id
+#                         userId
+#                     }}
+#                 }}
+#                 departments
 
+#                 }}
+#             }}
+#             }}
+#             """
+#         )
+#     params["organizationID"] = organization_id
+#     params["userID"] = user_id
+#     params["nextToken"] = nextToken
 
-def get_enabled_level_gammas(gql_client, organization_id, user_id,  disabled_levels, gammas_data, nextToken):
-    params = {}
-    if disabled_levels == []:
-        query = get_gammas_by_org_query
-    else:
-        input_str, filter_str = input_filter_string_maker(disabled_levels)
-        params = {
-            f"levelID{i}": disabled_levels[i-1] for i in range(1, len(disabled_levels)+1)
-        }
-        query = gql(
-            f"""
-            query gammasByOrganizationID($organizationID:ID!, $userID:ID, $nextToken:String, {input_str} ) {{
-            gammasByOrganizationID(organizationID:$organizationID, nextToken:$nextToken, filter: {{and:[{filter_str}]}}) {{
-                nextToken
-                items {{
-                createdAt
-                id
-                friendlyId
-                level {{
-                    id
-                    name
-                    level
-                }}
-                title
-                hiddenUsers(filter: {{userId: {{eq: $userID}}}}) {{
-                    items {{
-                        gammaId
-                        id
-                        userId
-                    }}
-                }}
-                departments
-
-                }}
-            }}
-            }}
-            """
-        )
-    params["organizationID"] = organization_id
-    params["userID"] = user_id
-    params["nextToken"] = nextToken
-
-    response = gql_client.execute(
-        query, variable_values=params)["gammasByOrganizationID"]
-    gammas_data = response["items"]
-    return gammas_data, response["nextToken"]
+#     response = gql_client.execute(
+#         query, variable_values=params)["gammasByOrganizationID"]
+#     gammas_data = response["items"]
+#     return gammas_data, response["nextToken"]
 
 
 GQL_CLIENT = get_graphql_client()
@@ -313,22 +314,22 @@ def get_rate():
         params = {
             "id": organization_id
         }
-        organization = GQL_CLIENT.execute(
-            get_org_query, variable_values=params).get("getOrganization", None)
+        organization = GQL_CLIENT.execute(get_org_query, variable_values=params).get("getOrganization", None)
         objectives = organization["objectives"]["items"]
-        rating_flags = json.loads(organization["ratingFlags"]) if organization["ratingFlags"] is not None else {}
         
+        rating_flags = json.loads(organization["ratingFlags"]) if organization["ratingFlags"] is not None else {}
         disabled_levels = [key for key in rating_flags if rating_flags[key] == False]        
         
         if not any(rating_flags.values()):
             return Response(body="Rating disabled", status_code=400)
         
-        gammas_data = []
-        gammas_data, nextToken = get_enabled_level_gammas(
-            GQL_CLIENT, organization_id, user_id, disabled_levels, gammas_data, nextToken)
+        # Commneted by Vivek
+        # gammas_data = []
+        # gammas_data, nextToken = get_enabled_level_gammas(GQL_CLIENT, organization_id, user_id, disabled_levels, gammas_data, nextToken)
         
         
         # Vivek start
+        
         print("disabled_levels - ", disabled_levels)
         print("rating_flags - ", rating_flags)
         stage_details = {}
@@ -342,7 +343,7 @@ def get_rate():
         for thread in threads:
             thread.join()
 
-        print("gammas_data", gammas_data)
+        # print("gammas_data", gammas_data) # Vivek
         print("user_ratings_data", user_ratings_data)
         
         # vivek start
@@ -412,15 +413,16 @@ def get_rate():
                             }
                         }
                     }
-            else:
-                search_query = {
-                        "wildcard": {
-                            "title.keyword": {
-                                "value": "*" + search + "*" if search else "*",
-                                "case_insensitive": True
-                            }
-                        }                        
+                request["query"]["bool"]["must"].append(search_query)
+            
+            search_query = {
+                "wildcard": {
+                    "title.keyword": {
+                        "value": "*" + search + "*" if search else "*",
+                        "case_insensitive": True
                     }
+                }                        
+            }
                 
             request["query"]["bool"]["must"].append(search_query)
     
@@ -441,7 +443,41 @@ def get_rate():
                 }
             }]
         
-        print("request", request)
+        elif sort_field == "level":
+            
+            request["sort"] = [{
+                "_script": {
+                    "type": "number",
+                    "order": sort_direction.lower(),
+                    "script": {
+                        "lang": "painless",
+                        "source": "def levelID = doc['levelID.keyword'].value; if (params.scores.containsKey(levelID)) { return params.scores[levelID]; } else { return 1000; }",
+                        "params": {
+                            "scores": {
+                                stage: info['level'] for stage, info in stage_details.items()
+                            }
+                        }
+                    }
+                }
+            }]
+        
+        elif sort_field == "ratingsByUser":
+            
+            request["sort"] = [{
+                "_script": {
+                    "type": "number",
+                    "order": "asc" if sort_direction.lower() == "desc" else "desc",
+                    "script": {
+                        "lang": "painless",
+                        "source": "def gammeID = doc['id.keyword'].value; if (params.scores.containsKey(gammeID)) { return params.scores[gammeID]; } else { return 0; }",
+                        "params": {
+                            "scores": {id_name: rating for id_name, rating in user_ratings_data.items()}
+                        }
+                    }
+                }
+            }]
+        
+        print("request - ", request)
         
         response = OPENSEARCH_CLIENT.search(
             body=request,
