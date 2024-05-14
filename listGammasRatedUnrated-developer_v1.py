@@ -67,23 +67,25 @@ def get_stages(organization_id, stage_details):
 # Vivek END
 
 DEPARTMENT_TABLE_NAME = os.environ['API_STRALIGN_DEPARTMENTTABLE_NAME']
-get_user_ratings_by_user_query = gql(
-    """
-    query userRatingsByUserIDAndGammaID($userID: ID!, $nextToken: String) {
-        userRatingsByUserIDAndGammaID(userID: $userID, nextToken: $nextToken, limit: 10000) {
-            nextToken
-            items {
-                userRatingObjectiveId
-                gammaID
-                Objective {
-                    active
-                }
-            }
-        }
-    }
+# Commented by Vivek
+# get_user_ratings_by_user_query = gql(
+#     """
+#     query userRatingsByUserIDAndGammaID($userID: ID!, $nextToken: String) {
+#         userRatingsByUserIDAndGammaID(userID: $userID, nextToken: $nextToken, limit: 10000) {
+#             nextToken
+#             items {
+#                 userRatingObjectiveId
+#                 gammaID
+#                 Objective {
+#                     active
+#                 }
+#             }
+#         }
+#     }
 
-    """
-)
+#     """
+# )
+
 get_org_query = gql(
     """
         query getOrganization($id: ID!) {
@@ -154,38 +156,39 @@ def get_global_department_table():
     return DEPARTMENT_TABLE
 
 
-def get_GQL_paginated(gqlClient, query, params, list_query_name, result):
-    nextToken = None
-    count = 1
+# Commentted by Vivek
+# def get_GQL_paginated(gqlClient, query, params, list_query_name, result):
+#     nextToken = None
+#     count = 1
 
-    while (nextToken != None or count < 2):
-        count += 1
+#     while (nextToken != None or count < 2):
+#         count += 1
 
-        response = gqlClient.execute(query, variable_values=params)
-        print(response)
-        result.extend(response[list_query_name]["items"])
-        nextToken = response[list_query_name].get("nextToken", None)
-        params["nextToken"] = nextToken
-        print(nextToken)
-    return result
+#         response = gqlClient.execute(query, variable_values=params)
+#         print(response)
+#         result.extend(response[list_query_name]["items"])
+#         nextToken = response[list_query_name].get("nextToken", None)
+#         params["nextToken"] = nextToken
+#         print(nextToken)
+#     return result
 
+# Commentted by Vivek
+# def get_user_ratings_data(gql_client, user_id, user_ratings_data):
+#     params = {
+#         "userID": user_id,
+#         "nextToken": None
+#     }
+#     user_ratings = []
+#     user_ratings = get_GQL_paginated(gql_client, get_user_ratings_by_user_query, params, "userRatingsByUserIDAndGammaID", user_ratings)
 
-def get_user_ratings_data(gql_client, user_id, user_ratings_data):
-    params = {
-        "userID": user_id,
-        "nextToken": None
-    }
-    user_ratings = []
-    user_ratings = get_GQL_paginated(gql_client, get_user_ratings_by_user_query, params, "userRatingsByUserIDAndGammaID", user_ratings)
-
-    print("user_ratings - ", user_ratings)
-    unique_user_ratings = set((item["gammaID"], item["userRatingObjectiveId"],) for item in user_ratings if item["Objective"]["active"])
-    print("unique_user_ratings - ", unique_user_ratings)
-    for combination in unique_user_ratings:
-        gamma_id, _ = combination
-        user_ratings_data[gamma_id] = user_ratings_data.get(gamma_id, 0) + 1
-    print("get_user_ratings_data - ", get_user_ratings_data)
-    return user_ratings_data
+#     print("user_ratings - ", user_ratings)
+#     unique_user_ratings = set((item["gammaID"], item["userRatingObjectiveId"],) for item in user_ratings if item["Objective"]["active"])
+#     print("unique_user_ratings - ", unique_user_ratings)
+#     for combination in unique_user_ratings:
+#         gamma_id, _ = combination
+#         user_ratings_data[gamma_id] = user_ratings_data.get(gamma_id, 0) + 1
+#     print("get_user_ratings_data - ", get_user_ratings_data)
+#     return user_ratings_data
 
 
 def get_departments_by_organization(organization_id, departments_data):
@@ -273,6 +276,7 @@ def get_rate():
     PAGE_SIZE = 1000
     OPENSEARCH_CLIENT = get_global_opensearch_client()
     INDEX_NAME = 'gamma'
+    USERRATING_INDEX = 'userrating'
     
     sort_field = app.current_request.query_params.get("sort_field", "friendlyId")
     sort_direction = app.current_request.query_params.get("sort_direction", "asc")
@@ -289,8 +293,7 @@ def get_rate():
     
     # Vivek End     
     user_id = app.current_request.query_params.get("id", None)
-    organization_id = app.current_request.query_params.get(
-        "organizationID", None)
+    organization_id = app.current_request.query_params.get("organizationID", None)
     nextToken = app.current_request.query_params.get("nextToken", None)
     nextToken = None if nextToken == "null" else nextToken
     if user_id is None or organization_id is None:
@@ -303,9 +306,9 @@ def get_rate():
             "userID": user_id,
             "nextToken": None
         }
-        threads.append(threading.Thread(target=get_user_ratings_data,
-                                        args=(get_graphql_client(), user_id, user_ratings_data, )))
-        threads[-1].start()
+        # Commented by Vivek
+        # threads.append(threading.Thread(target=get_user_ratings_data, args=(get_graphql_client(), user_id, user_ratings_data, )))
+        # threads[-1].start()
 
         threads.append(threading.Thread(target=get_departments_by_organization,
                                         args=(organization_id, departments_data, )))
@@ -426,7 +429,7 @@ def get_rate():
                 
             request["query"]["bool"]["must"].append(search_query)
     
-        print("sort_field b", sort_field)
+        print("sort_field - ", sort_field)
         if sort_field == "title":
         
             request["sort"] = [{
@@ -462,6 +465,47 @@ def get_rate():
             }]
         
         elif sort_field == "ratingsByUser":
+            user_ratings_data_sort = {}
+            rating_request = {
+                "size": 0,
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "term": {
+                                    "organizationID.keyword": {
+                                        "value": organization_id
+                                    }
+                                }
+                            },
+                            {
+                                "term": {
+                                    "userID.keyword": {
+                                        "value": user_id
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                 "aggs": {
+                    "gammas": {
+                        "terms": {
+                            "field": "gammaID.keyword",
+                            "size": 5000
+                        }
+                    }
+                }
+            }
+            
+            rating_response = OPENSEARCH_CLIENT.search(
+                body=rating_request,
+                index=USERRATING_INDEX
+            )
+            
+            # print("rating_response - ", rating_response['aggregations']['gammas']['buckets'])
+            user_ratings_data_sort = {item['key']: item['doc_count'] for item in rating_response['aggregations']['gammas']['buckets']}
+            print("user_ratings_data_sort - ", user_ratings_data_sort)
             
             request["sort"] = [{
                 "_script": {
@@ -471,7 +515,7 @@ def get_rate():
                         "lang": "painless",
                         "source": "def gammeID = doc['id.keyword'].value; if (params.scores.containsKey(gammeID)) { return params.scores[gammeID]; } else { return 0; }",
                         "params": {
-                            "scores": {id_name: rating for id_name, rating in user_ratings_data.items()}
+                            "scores": {id_name: rating for id_name, rating in user_ratings_data_sort.items()}
                         }
                     }
                 }
