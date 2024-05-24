@@ -8,8 +8,6 @@ from chaliceHelper import app, BadRequestError, Response
 from boto3.dynamodb.conditions import Key
 
 
-#some comment
-
 DEPARTMENT_TABLE_NAME = os.environ['API_STRALIGN_DEPARTMENTTABLE_NAME']
 get_user_ratings_by_user_query = gql(
     """
